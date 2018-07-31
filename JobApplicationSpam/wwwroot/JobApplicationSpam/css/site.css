@@ -1,0 +1,27 @@
+﻿.fsssssileActionItem {
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
+}
+
+a {
+    color: #3687bd;
+    text-decoration: none;
+}
+
+    a:hover {
+        color: rgb(102, 154, 212);
+        text-decoration: none;
+    }
+
+.mainColor {
+    color: #3687bd;
+}
+
+.mainBackgroundColor {
+    background-color: #3687bd;
+}
+
+.active1 {
+    background-color: rgb(245, 245, 245) !important;
+}

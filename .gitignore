@@ -11,8 +11,8 @@
 *.userprefs
 
 JobApplicationSpam/Migrations/
-JobApplicationSpam/wwwroot/
-# !JobApplicationSpam/wwwroot/JobApplicationSpam/*
+JobApplicationSpam/wwwroot/*
+!/JobApplicationSpam/wwwroot/JobApplicationSpam/
 
 
 # Build results
