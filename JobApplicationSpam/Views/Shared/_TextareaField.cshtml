@@ -2,5 +2,5 @@
 
 <div class="form-group">
     <label for="@Model.Id"><b>@Model.LabelText</b></label>
-    <textarea id="@Model.Id" class="form-control" style="min-height: @Model.Height"></textarea>
+    <textarea id="@Model.Id" name="@Model.Id" class="form-control field" style="min-height: @Model.Height">@Model.Value</textarea>
 </div>

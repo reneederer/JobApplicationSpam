@@ -21,8 +21,10 @@ namespace JobApplicationSpam.Models
         public virtual DbSet<Document> Documents { get; set; }
         public virtual DbSet<DocumentEmail> DocumentEmail { get; set; }
         public virtual DbSet<CustomVariable> CustomVariables { get; set; }
+        public virtual DbSet<DocumentFile> DocumentFiles { get; set; }
         public virtual DbSet<AppUser> AppUsers { get; set; }
         public virtual DbSet<SentApplication> SentApplications { get; set; }
         public virtual DbSet<UserValues> UserValues { get; set; }
+        public virtual DbSet<Employer> Employers { get; set; }
     }
 }

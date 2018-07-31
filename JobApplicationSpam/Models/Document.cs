@@ -40,37 +40,12 @@ namespace JobApplicationSpam.Models
         public Document Document { get; set; }
     }
 
-    public enum Gender
-    {
-        Male,
-        Female,
-        Unknown
-    }
-
-    public static class GenderExtensions
-    {
-        public static string ToString(this Gender gender)
-        {
-            switch(gender)
-            {
-                case Gender.Male:
-                    return "m";
-                case Gender.Female:
-                    return "m";
-                case Gender.Unknown:
-                    return "u";
-                default:
-                    throw new ArgumentException($"Gender not found: {gender}");
-            }
-        }
-    }
-
     public class UserValues
     {
         [ForeignKey("UserId")]
         public AppUser AppUser { get; set; }
         public int Id { get; set; }
-        public Gender Gender { get; set; }
+        public string Gender { get; set; }
         public string Degree { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -85,8 +60,10 @@ namespace JobApplicationSpam.Models
     public class Employer
     {
         public int Id { get; set; }
+        [ForeignKey("UserId")]
+        public AppUser AppUser { get; set; }
         public string Company { get; set; }
-        public Gender Gender { get; set; }
+        public string Gender { get; set; }
         public string Degree { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }

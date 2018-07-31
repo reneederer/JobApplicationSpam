@@ -1,10 +1,10 @@
-﻿@model Document
+﻿@model JobApplicationSpamState
 @{
     Layout = "_Layout";
 }
 
 <pre>
-@Model.JobName
+@Model.Document.JobName
 </pre>
 <br />
 <br />
@@ -19,14 +19,28 @@
         Fields =
             new Field[]
             {
-                new RadioField { LabelText = "Gender", Id = "UserValues_Gender", LabelTexts = new [] { "male", "female", "won't tell" } },
-                new InputField { LabelText = "First name", Id = "UserValues_FirstName", OdtVariable = "$meinVorname" },
-                new InputField { LabelText = "Last name", Id = "UserValues_LastName", OdtVariable = "$meinNachname" },
-                new InputField { LabelText = "Street", Id = "UserValues_Street", OdtVariable = "$meinNachname" },
-                new InputField { LabelText = "Postcode", Id = "UserValues_Postcode", OdtVariable = "$meinePlz" },
-                new InputField { LabelText = "City", Id = "UserValues_City", OdtVariable = "$meineStadt" },
-                new InputField { LabelText = "Phone", Id = "UserValues_Phone", OdtVariable = "$meineTelefonnr" },
-                new InputField { LabelText = "MobilePhone", Id = "UserValues_MobilePhone", OdtVariable = "$meineMobilnr" },
+                new RadioField
+                {
+                    LabelText = "Gender",
+                    GroupName ="UserValues_Gender",
+                    Id = "UserValues_Gender",
+                    Value = Model.UserValues.Gender,
+                    Items =
+                        new []
+                        {
+                            new RadioItem { Id = "UserValues_GenderMale", LabelText = "male", Value = "m" },
+                            new RadioItem { Id = "UserValues_GenderFemale", LabelText = "female", Value = "f" },
+                            new RadioItem { Id = "UserValues_GenderUnknown", LabelText = "unknown", Value = "u" }
+                        }
+                },
+                new InputField { LabelText = "Degree", Id = "UserValues_Degree", OdtVariable = "$meinTitel", Value = Model.UserValues.Degree },
+                new InputField { LabelText = "First name", Id = "UserValues_FirstName", OdtVariable = "$meinVorname", Value = Model.UserValues.FirstName },
+                new InputField { LabelText = "Last name", Id = "UserValues_LastName", OdtVariable = "$meinNachname", Value = Model.UserValues.LastName },
+                new InputField { LabelText = "Street", Id = "UserValues_Street", OdtVariable = "$meineStrasse", Value = Model.UserValues.Street },
+                new InputField { LabelText = "Postcode", Id = "UserValues_Postcode", OdtVariable = "$meinePlz", Value = Model.UserValues.Postcode },
+                new InputField { LabelText = "City", Id = "UserValues_City", OdtVariable = "$meineStadt", Value = Model.UserValues.Phone },
+                new InputField { LabelText = "Phone", Id = "UserValues_Phone", OdtVariable = "$meineTelefonnr", Value = Model.UserValues.Phone },
+                new InputField { LabelText = "MobilePhone", Id = "UserValues_MobilePhone", OdtVariable = "$meineMobilnr", Value = Model.UserValues.MobilePhone }
             }
     }
 )
@@ -39,9 +53,9 @@
         Fields =
             new Field[]
             {
-                new InputField { LabelText = "Subject", Id = "DocumentEmail_Subject" },
-                new TextareaField { Height = "400px", LabelText = "Body", Id = "DocumentEmail_Body" },
-                new InputField { LabelText = "Attachment name", Id = "DocumentEmail_AttachmentName" },
+                new InputField { LabelText = "Subject", Id = "DocumentEmail_Subject", Value = Model.DocumentEmail.Subject },
+                new TextareaField { Height = "400px", LabelText = "Body", Id = "DocumentEmail_Body", Value = Model.DocumentEmail.Body },
+                new InputField { LabelText = "Attachment name", Id = "DocumentEmail_AttachmentName", Value = Model.DocumentEmail.AttachmentName }
             }
     }
 )
@@ -55,21 +69,47 @@
         Fields =
             new Field[]
             {
-                new InputField { LabelText = "Apply as", Id = "ApplyNow_JobName", OdtVariable = "$jobName" },
-                new InputField { LabelText = "Attachment name", Id = "ApplyNow_UserEmail", OdtVariable = "$meineEmail" },
+                new InputField { LabelText = "Apply as", Id = "Document_JobName", OdtVariable = "$jobName", Value = Model.Document.JobName },
+                new InputField { LabelText = "User email", Id = "UserValues_Email", OdtVariable = "$meineEmail", Value = Model.UserValues.Email },
                 new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton" },
-                new InputField { LabelText = "Company name", Id = "ApplyNow_EmployerCompany", OdtVariable = "$chefFirma" },
-                new InputField { LabelText = "First name", Id = "ApplyNow_EmployerFirstName", OdtVariable = "$chefVorname" },
-                new InputField { LabelText = "Last name", Id = "ApplyNow_EmployerLastName", OdtVariable = "$chefNachname" },
-                new InputField { LabelText = "Street", Id = "ApplyNow_Street", OdtVariable = "$chefStrasse" },
-                new InputField { LabelText = "Postcode", Id = "ApplyNow_Postcode", OdtVariable = "$chefPlz" },
-                new InputField { LabelText = "City", Id = "ApplyNow_City", OdtVariable = "$chefStadt" },
-                new InputField { LabelText = "Phone", Id = "ApplyNow_EmployerPhone", OdtVariable = "$chefTelefonnr" },
-                new InputField { LabelText = "MobilePhone", Id = "ApplyNow_EmployerMobilePhone", OdtVariable = "$chefMobilnr" },
+                new InputField { LabelText = "Company name", Id = "Employer_Company", OdtVariable = "$chefFirma", Value = Model.Employer.Company },
+                new RadioField
+                {
+                    LabelText = "Gender",
+                    GroupName ="Employer_Gender",
+                    Id = "Employer_Gender",
+                    Value = Model.Employer.Gender,
+                    Items =
+                        new []
+                        {
+                            new RadioItem { Id = "Employer_GenderMale", LabelText = "male", Value = "m" },
+                            new RadioItem { Id = "Employer_GenderFemale", LabelText = "female", Value = "f" },
+                            new RadioItem { Id = "Employer_GenderUnknown", LabelText = "unknown", Value = "u" }
+                        }
+                },
+                new InputField { LabelText = "Degree", Id = "Employer_Degree", OdtVariable = "$chefTitel", Value = Model.Employer.Degree },
+                new InputField { LabelText = "First name", Id = "Employer_FirstName", OdtVariable = "$chefVorname", Value = Model.Employer.FirstName },
+                new InputField { LabelText = "Last name", Id = "Employer_LastName", OdtVariable = "$chefNachname", Value = Model.Employer.LastName },
+                new InputField { LabelText = "Street", Id = "Employer_Street", OdtVariable = "$chefStrasse", Value = Model.Employer.Street },
+                new InputField { LabelText = "Postcode", Id = "Employer_Postcode", OdtVariable = "$chefPlz", Value = Model.Employer.Postcode },
+                new InputField { LabelText = "City", Id = "Employer_City", OdtVariable = "$chefStadt", Value = Model.Employer.City },
+                new InputField { LabelText = "Phone", Id = "Employer_Phone", OdtVariable = "$chefTelefonnr", Value = Model.Employer.Phone },
+                new InputField { LabelText = "MobilePhone", Id = "Employer_MobilePhone", OdtVariable = "$chefMobilnr", Value = Model.Employer.MobilePhone },
                 new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton" }
             }
     }
 )
+
+@{ 
+    var fileFields = new List<FileField>();
+    for (int i = 0; i < Model.DocumentFiles.Count(); ++i)
+    {
+        var documentFile = Model.DocumentFiles.ElementAt(i);
+        fileFields.Add(
+            new FileField { Name = documentFile.Name, Path = documentFile.Path }
+        );
+    }
+}
 
 @await Html.PartialAsync(
     "_Page",
@@ -82,38 +122,34 @@
             {
                 new DocumentFilesField
                 {
-                    Files = new []
-                    {
-                        new FileField { Name = "hallo.odt" },
-                        new FileField { Name = "welt.odt" },
-                        new FileField { Name = "wie.odt" },
-                        new FileField { Name = "gehts.odt" }
-                    }
+                    Files = fileFields
                 }
             }
     }
 )
 
 
-@await Html.PartialAsync(
+@{
+    var customVariableFields = new List<Field>();
+    for (int i = 0; i < Model.CustomVariables.Count(); ++i)
+    {
+        customVariableFields.Add(
+            new TextareaField
+            {
+                Height = "150px",
+                LabelText = "",
+                Id = $"CustomVariables_Text_{i + 1}",
+                Value = @Model.CustomVariables.ElementAt(i).Text
+            }
+        );
+    }
+}
+    @await Html.PartialAsync(
     "_Page",
     new Page
     {
-        Id = "CustomVariables",
+        Id = "CustomVariable",
         Header = "Custom variables",
-        Fields =
-            new Field[]
-            {
-                new TextareaField
-                {
-                    Height = "150px",
-                    LabelText = ""
-                },
-                new TextareaField
-                {
-                    Height = "150px",
-                    LabelText = ""
-                }
-            }
+        Fields = customVariableFields
     }
 )

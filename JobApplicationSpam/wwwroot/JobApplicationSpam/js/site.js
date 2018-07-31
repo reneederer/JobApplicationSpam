@@ -27,8 +27,17 @@ function save(saveData) {
     });
 }
 
-$(document).on('input', '.inputField', function (ev) {
-    saveData.set ($(this).attr('id'), $(this).val())
+$(document).on('input', '.field', function (ev) {
+    setSaveTimer($(this))
+})
+
+$(document).on('change', '.field', function (ev) {
+    setSaveTimer($(this))
+})
+
+function setSaveTimer(jEl) {
+    saveData.set(jEl.attr('name'), jEl.val())
     clearTimeout(saveTimer)
     saveTimer = setTimeout(function () {save(saveData)}, timeUntillSave)
-})
+
+}

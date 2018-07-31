@@ -3,6 +3,16 @@ using System;
 
 namespace JobApplicationSpam.Models
 {
+    public class JobApplicationSpamState
+    {
+        public Document Document { get; set; }
+        public DocumentEmail DocumentEmail { get; set; }
+        public IEnumerable<CustomVariable> CustomVariables { get; set; } = new List<CustomVariable>();
+        public IEnumerable<DocumentFile> DocumentFiles { get; set; } = new List<DocumentFile>();
+        public UserValues UserValues { get; set; }
+        public Employer Employer { get; set; }
+    }
+
     public abstract class Field
     {
         public string Id { get; set; }
@@ -17,6 +27,7 @@ namespace JobApplicationSpam.Models
     {
         public string OdtVariable { get; set; } = "";
         public string LabelText { get; set; } = "";
+        public string Value { get; set; } = "";
     }
 
     public class TextareaField : VariableField
@@ -30,9 +41,17 @@ namespace JobApplicationSpam.Models
         public override string GetFieldType() => "_InputField";
     }
 
+    public class RadioItem
+    {
+        public string LabelText { get; set; }
+        public string Id { get; set; }
+        public string Value { get; set; }
+    }
+
     public class RadioField : VariableField
     {
-        public IEnumerable<string> LabelTexts { get; set; } = new List<string>();
+        public IEnumerable<RadioItem> Items { get; set; } = new List<RadioItem>();
+        public string GroupName { get; set; } = Guid.NewGuid().ToString();
         public override string GetFieldType() => "_RadioField";
         public RadioField()
         {

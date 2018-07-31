@@ -1,13 +1,12 @@
 ﻿@model JobApplicationSpam.Models.RadioField
 
 <div>
-    <label class="d-block" asp-for="@Model.Id"><b>@Model.LabelText</b></label>
-    @foreach(var labelText in Model.LabelTexts)
+    <label class="d-block"><b>@Model.LabelText</b></label>
+    @foreach (var radioItem in Model.Items)
     {
-        var id = Model.Id + "_" + labelText;
         <div class="form-group p-0 m-0">
-            <input id="@id" type="radio" />
-            <label for="@id">@labelText</label>
+            <input id="@radioItem.Id" class="field" name="@Model.GroupName" type="radio" value="@radioItem.Value" @(Model.Value == radioItem.Value ? "checked=checked" : "") />
+            <label for="@radioItem.Id">@radioItem.LabelText</label>
         </div>
     }
 </div>
