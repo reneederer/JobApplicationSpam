@@ -1,0 +1,13 @@
+﻿@model JobApplicationSpam.Models.RadioField
+
+<div>
+    <label class="d-block" asp-for="@Model.Id"><b>@Model.LabelText</b></label>
+    @foreach(var labelText in Model.LabelTexts)
+    {
+        var id = Model.Id + "_" + labelText;
+        <div class="form-group p-0 m-0">
+            <input id="@id" type="radio" />
+            <label for="@id">@labelText</label>
+        </div>
+    }
+</div>

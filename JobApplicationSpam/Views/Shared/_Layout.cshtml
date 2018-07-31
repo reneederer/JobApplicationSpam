@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="~/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="~/Font-Awesome/web-fonts-with-css/css/fontawesome-all.css" />
+    <script src="~/jQuery/dist/jquery.js"></script>
+    <script src="~/JobApplicationSpam/js/site.js"></script>
+    <link rel="stylesheet" href="~/JobApplicationSpam/css/site.css" />
+    <title>Bewerbungsspam</title>
+</head>
+<body>
+    <div class="container">
+        <div class="nav navbar mainBackgroundColor mb-3">
+            <h3><a style="color: white" href="#">Bewerbungsspam</a></h3>
+        </div>
+        @{
+            var menuItems =
+                new[]
+                {
+                    new MenuItem{ Text = "Documents", FontAwesome = "fa fa-file", ActivatesPages = @"[""Documents""]" },
+                    new MenuItem{ Text = "User Values", FontAwesome = "fa fa-user", ActivatesPages = @"[""UserValues""]" },
+                    new MenuItem{ Text = "Custom variables", FontAwesome = "fa fa-wrench", ActivatesPages = @"[""CustomVariables""]" },
+                    new MenuItem{ Text = "Email", FontAwesome = "fa fa-envelope", ActivatesPages = @"[""Email""]" },
+                    new MenuItem{ Text = "Apply now", FontAwesome = "fa fa-handshake", ActivatesPages = @"[""ApplyNow""]" }
+                };
+        }
+
+
+        <div class="d-lg-block sticky-top" style="height:30px; margin-bottom: 15px;">
+            @await Html.PartialAsync(
+                "_NavigationMenuTop",
+                @menuItems
+            )
+        </div>
+        <div class="row">
+            <div class="sticky-top col-12 col-lg-4 d-none d-lg-block" style="height:100%">
+                @await Html.PartialAsync(
+                    "_NavigationMenuLeft",
+                    @menuItems
+                )
+            </div>
+            <div class="col-lg-8">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,119 @@
+﻿@model Document
+@{
+    Layout = "_Layout";
+}
+
+<pre>
+@Model.JobName
+</pre>
+<br />
+<br />
+<br />
+
+@await Html.PartialAsync(
+    "_Page",
+    new Page
+    {
+        Id = "UserValues",
+        Header = "User values",
+        Fields =
+            new Field[]
+            {
+                new RadioField { LabelText = "Gender", Id = "UserValues_Gender", LabelTexts = new [] { "male", "female", "won't tell" } },
+                new InputField { LabelText = "First name", Id = "UserValues_FirstName", OdtVariable = "$meinVorname" },
+                new InputField { LabelText = "Last name", Id = "UserValues_LastName", OdtVariable = "$meinNachname" },
+                new InputField { LabelText = "Street", Id = "UserValues_Street", OdtVariable = "$meinNachname" },
+                new InputField { LabelText = "Postcode", Id = "UserValues_Postcode", OdtVariable = "$meinePlz" },
+                new InputField { LabelText = "City", Id = "UserValues_City", OdtVariable = "$meineStadt" },
+                new InputField { LabelText = "Phone", Id = "UserValues_Phone", OdtVariable = "$meineTelefonnr" },
+                new InputField { LabelText = "MobilePhone", Id = "UserValues_MobilePhone", OdtVariable = "$meineMobilnr" },
+            }
+    }
+)
+@await Html.PartialAsync(
+    "_Page",
+    new Page
+    {
+        Id = "DocumentEmail",
+        Header = "Email",
+        Fields =
+            new Field[]
+            {
+                new InputField { LabelText = "Subject", Id = "DocumentEmail_Subject" },
+                new TextareaField { Height = "400px", LabelText = "Body", Id = "DocumentEmail_Body" },
+                new InputField { LabelText = "Attachment name", Id = "DocumentEmail_AttachmentName" },
+            }
+    }
+)
+
+@await Html.PartialAsync(
+    "_Page",
+    new Page
+    {
+        Id = "ApplyNow",
+        Header = "Apply Now",
+        Fields =
+            new Field[]
+            {
+                new InputField { LabelText = "Apply as", Id = "ApplyNow_JobName", OdtVariable = "$jobName" },
+                new InputField { LabelText = "Attachment name", Id = "ApplyNow_UserEmail", OdtVariable = "$meineEmail" },
+                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton" },
+                new InputField { LabelText = "Company name", Id = "ApplyNow_EmployerCompany", OdtVariable = "$chefFirma" },
+                new InputField { LabelText = "First name", Id = "ApplyNow_EmployerFirstName", OdtVariable = "$chefVorname" },
+                new InputField { LabelText = "Last name", Id = "ApplyNow_EmployerLastName", OdtVariable = "$chefNachname" },
+                new InputField { LabelText = "Street", Id = "ApplyNow_Street", OdtVariable = "$chefStrasse" },
+                new InputField { LabelText = "Postcode", Id = "ApplyNow_Postcode", OdtVariable = "$chefPlz" },
+                new InputField { LabelText = "City", Id = "ApplyNow_City", OdtVariable = "$chefStadt" },
+                new InputField { LabelText = "Phone", Id = "ApplyNow_EmployerPhone", OdtVariable = "$chefTelefonnr" },
+                new InputField { LabelText = "MobilePhone", Id = "ApplyNow_EmployerMobilePhone", OdtVariable = "$chefMobilnr" },
+                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton" }
+            }
+    }
+)
+
+@await Html.PartialAsync(
+    "_Page",
+    new Page
+    {
+        Id = "Documents",
+        Header = "Documents",
+        Fields =
+            new Field[]
+            {
+                new DocumentFilesField
+                {
+                    Files = new []
+                    {
+                        new FileField { Name = "hallo.odt" },
+                        new FileField { Name = "welt.odt" },
+                        new FileField { Name = "wie.odt" },
+                        new FileField { Name = "gehts.odt" }
+                    }
+                }
+            }
+    }
+)
+
+
+@await Html.PartialAsync(
+    "_Page",
+    new Page
+    {
+        Id = "CustomVariables",
+        Header = "Custom variables",
+        Fields =
+            new Field[]
+            {
+                new TextareaField
+                {
+                    Height = "150px",
+                    LabelText = ""
+                },
+                new TextareaField
+                {
+                    Height = "150px",
+                    LabelText = ""
+                }
+            }
+    }
+)

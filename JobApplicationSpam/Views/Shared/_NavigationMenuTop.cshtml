@@ -1,0 +1,12 @@
+﻿@model IEnumerable<MenuItem>
+
+<ul class="list-inline" style="height:100%">
+@foreach(var menuItem in Model)
+{
+    <li class="list-inline-item align-middle text-center menuItem" data-activatesPages='@menuItem.ActivatesPages'>
+        <a href="#">
+            <i class="@menuItem.FontAwesome fa-2x"></i>
+        </a>
+    </li>
+}
+</ul>

@@ -1,0 +1,15 @@
+﻿@model IEnumerable<MenuItem>
+
+<ul class="list-unstyled list-group">
+@foreach(var menuItem in Model)
+{
+    <li class="list-group-item menuItem"
+        data-activatesPages='@menuItem.ActivatesPages'>
+        <a href="#">
+            <div class="block">
+                <h5><i class="@menuItem.FontAwesome p-2"></i>@menuItem.Text</h5>
+            </div>
+        </a>
+    </li>
+}
+</ul>

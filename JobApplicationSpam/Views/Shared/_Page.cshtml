@@ -1,0 +1,12 @@
+﻿@model Page
+
+<div class="page" id="@Model.Id">
+    <h1>@Model.Header</h1>
+    @foreach(var field in Model.Fields)
+    {
+        @await Html.PartialAsync(
+            field.GetFieldType(),
+            field
+        )
+    }
+</div>
