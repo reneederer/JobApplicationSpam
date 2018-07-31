@@ -61,6 +61,7 @@ namespace JobApplicationSpam.Models
 
     public class ButtonField : VariableField
     {
+        public string Class = "";
         public override string GetFieldType() => "_ButtonField";
     }
 
@@ -70,6 +71,12 @@ namespace JobApplicationSpam.Models
         public int Size {get;set;} = 0;
         public string Path {get;set;} = "";
         public override string GetFieldType() => "_FileField";
+    }
+
+    public class FileUploadField : Field
+    {
+        public string Class { get; set; }
+        public override string GetFieldType() => "_FileUploadField";
     }
 
     public class SelectField : VariableField

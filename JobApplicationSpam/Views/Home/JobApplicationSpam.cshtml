@@ -71,7 +71,7 @@
             {
                 new InputField { LabelText = "Apply as", Id = "Document_JobName", OdtVariable = "$jobName", Value = Model.Document.JobName },
                 new InputField { LabelText = "User email", Id = "UserValues_Email", OdtVariable = "$meineEmail", Value = Model.UserValues.Email },
-                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton" },
+                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton_Top", Class = "applyNow" },
                 new InputField { LabelText = "Company name", Id = "Employer_Company", OdtVariable = "$chefFirma", Value = Model.Employer.Company },
                 new RadioField
                 {
@@ -95,7 +95,7 @@
                 new InputField { LabelText = "City", Id = "Employer_City", OdtVariable = "$chefStadt", Value = Model.Employer.City },
                 new InputField { LabelText = "Phone", Id = "Employer_Phone", OdtVariable = "$chefTelefonnr", Value = Model.Employer.Phone },
                 new InputField { LabelText = "MobilePhone", Id = "Employer_MobilePhone", OdtVariable = "$chefMobilnr", Value = Model.Employer.MobilePhone },
-                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton" }
+                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton_Bottom", Class="applyNow" }
             }
     }
 )
@@ -123,7 +123,8 @@
                 new DocumentFilesField
                 {
                     Files = fileFields
-                }
+                },
+                new FileUploadField { Id = "UploadFile", Class = "uploadFile" }
             }
     }
 )
@@ -150,6 +151,7 @@
     {
         Id = "CustomVariable",
         Header = "Custom variables",
-        Fields = customVariableFields
+        Fields =
+            customVariableFields.Append(new ButtonField { Id = "AddVariable", LabelText = "Add a variable", Class = "addVariable" })
     }
 )

@@ -1,7 +1,4 @@
-﻿//import { setTimeout } from "core-js";
-//import { clearTimeout } from "timers";
-
-$(document).on('click', '.menuItem', function (ev) {
+﻿$(document).on('click', '.menuItem', function (ev) {
     $('.menuItem').removeClass('active1')
     $('.page').hide()
     for (var pageToActivate of JSON.parse($(this).attr('data-activatesPages'))) {
@@ -39,5 +36,64 @@ function setSaveTimer(jEl) {
     saveData.set(jEl.attr('name'), jEl.val())
     clearTimeout(saveTimer)
     saveTimer = setTimeout(function () {save(saveData)}, timeUntillSave)
+}
 
+$(document).on('click', '.applyNow', function () {
+    applyNow()
+})
+
+$(document).on('change', '.uploadFile', function () {
+    uploadFile($(this).get(0))
+    window.location.reload()
+})
+
+$(document).on('click', '.addVariable', function () {
+    addVariable()
+})
+
+function applyNow() {
+    $.ajax({
+        method: 'post',
+        contentType: false,
+        processData: false,
+        cache: false,
+        url: '/Home/ApplyNow',
+        data: new FormData()
+    }).done(function () {
+        $("[id^='Employer_']").val("")
+        $("[id^='Employer_Gender']").prop("checked", false)
+
+    })
+}
+
+function addVariable() {
+    var formData = new FormData();
+    formData.append('path', 'c:/users/rene/Downloads/hallo.odt')
+    $.ajax({
+        method: 'post',
+        contentType: false,
+        processData: false,
+        cache: false,
+        url: '/Home/ConvertToPdf',
+        data: formData
+    }).done(function () {
+        alert("asdf")
+    });
+}
+
+
+function uploadFile(fileUpload) {
+    var formData = new FormData();
+    for (var i = 0; i < fileUpload.files.length; ++i) {
+        formData.append(fileUpload.files[i].name, fileUpload.files[i])
+    }
+    $.ajax({
+        method: 'post',
+        contentType: false,
+        processData: false,
+        cache: false,
+        url: '/Home/UploadFile',
+        data: formData
+    }).done(function () {
+    });
 }
