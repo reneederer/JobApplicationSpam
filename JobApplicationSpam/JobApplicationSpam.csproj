@@ -6,12 +6,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FParsec" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.1" />
     <PackageReference Include="Npgsql" Version="4.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.Postgresql" Version="2.1.1.1" />
+    <PackageReference Include="PdfSharp" Version="1.32.3057" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
     <DotNetCliReference Include="Microsoft.EntityFrameworkCre.Tools.DotNet" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JobApplicationSpam.CustomVariableParser\JobApplicationSpam.CustomVariableParser.fsproj" />
+    <ProjectReference Include="..\JobApplicationSpam.Translation\JobApplicationSpam.Translation.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

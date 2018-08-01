@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using JobApplicationSpam.Models;
 using Npgsql;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
-
+using System.Text;
 
 namespace JobApplicationSpam
 {
@@ -21,6 +21,7 @@ namespace JobApplicationSpam
 
         public void ConfigureServices(IServiceCollection services)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             services
                 .AddDbContext<JobApplicationSpamDbContext>(options =>
                     options.UseNpgsql(Configuration["Data:JobApplicationSpam:ConnectionString"]))

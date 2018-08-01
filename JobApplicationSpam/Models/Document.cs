@@ -8,19 +8,38 @@ using System.IO;
 
 namespace JobApplicationSpam.Models
 {
-    public class TmpPaths
+    public class UnzipPaths
     {
         public string UnzipTo { get; set; }
         public string ZipTo { get; set; }
-        public string UserDirectory { get; set; }
-        public TmpPaths(string path, string userId)
+        public UnzipPaths()
         {
             var guid = UnzipTo = Guid.NewGuid().ToString();
             UnzipTo = $"c:/users/rene/JobApplicationSpam/tmp/{guid}/unzipped/";
             ZipTo =   $"c:/users/rene/JobApplicationSpam/tmp/{guid}/zipped/";
-            UserDirectory = $"c:/users/rene/JobApplicationSpam/data/{userId}/";
             Directory.CreateDirectory(UnzipTo);
             Directory.CreateDirectory(ZipTo);
+        }
+    }
+
+    public class TmpPath
+    {
+        public string Path { get; set; }
+        public TmpPath()
+        {
+            Path = $"c:/users/rene/JobApplicationSpam/tmp/{Guid.NewGuid().ToString()}/";
+            Directory.CreateDirectory(Path);
+        }
+    }
+
+    public class UserPaths
+    {
+        public string SaveTmp { get; set; }
+        public string UserDirectory { get; set; }
+        public UserPaths(string path, string userId)
+        {
+            UserDirectory = $"c:/users/rene/JobApplicationSpam/data/{userId}/";
+            SaveTmp = $"c:/users/rene/JobApplicationSpam/tmp/{Guid.NewGuid().ToString()}/";
             Directory.CreateDirectory(UserDirectory);
         }
     }

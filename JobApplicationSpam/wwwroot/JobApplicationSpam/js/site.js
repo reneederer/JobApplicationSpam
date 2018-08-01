@@ -32,6 +32,10 @@ $(document).on('change', '.field', function (ev) {
     setSaveTimer($(this))
 })
 
+$(document).on('click', '.field', function (ev) {
+    setSaveTimer($(this))
+})
+
 function setSaveTimer(jEl) {
     saveData.set(jEl.attr('name'), jEl.val())
     clearTimeout(saveTimer)

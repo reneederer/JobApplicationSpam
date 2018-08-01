@@ -6,6 +6,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.IO.Compression;
+using PdfSharp.Pdf;
+using PdfSharp;
+using PdfSharp.Pdf.IO;
 
 namespace JobApplicationSpam.Controllers
 {
@@ -17,10 +20,8 @@ namespace JobApplicationSpam.Controllers
             this.dbContext = dbContext;
         }
 
-        public ViewResult Index() =>
-            View(
-                new Dictionary<string, object>
-                { ["Placeholder"] = "Placeholder" });
+        public ActionResult Index() =>
+            RedirectToAction("J");
 
         public ViewResult J()
         {
@@ -29,15 +30,7 @@ namespace JobApplicationSpam.Controllers
             return
                 View(
                     "JobApplicationSpam",
-                    new JobApplicationSpamState
-                    {
-                        Document = document,
-                        UserValues = (UserValues)GetDbObject("UserValues", appUser, document),
-                        Employer = (Employer)GetDbObject("Employer", appUser, document),
-                        DocumentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document),
-                        CustomVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document),
-                        DocumentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document)
-                    }
+                    GetJobApplicationSpamState()
                 );
         }
 
@@ -92,6 +85,26 @@ namespace JobApplicationSpam.Controllers
                 };
             dbContext.Add(sentApplication);
 
+            var pdfFilePaths = new List<string>();
+            foreach(var documentFile in documentFiles)
+            {
+                pdfFilePaths.Add(ConvertToPdf(documentFile.Path));
+            }
+
+            var mergedPath = Path.Combine(new TmpPath().Path, "mypdf.pdf");
+            using (var outputDocument = new PdfDocument())
+            {
+                foreach(var pdfFilePath in pdfFilePaths)
+                {
+                    var inputDocument = PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import);
+                    for(int i = 0; i < inputDocument.Pages.Count; ++i)
+                    {
+                        outputDocument.AddPage(inputDocument.Pages[i]);
+                    }
+                }
+                outputDocument.Save(mergedPath);
+            }
+
             var documentCopy = new Document { JobName = document.JobName, AppUser = appUser };
             dbContext.Add(documentCopy);
             dbContext.Add(new Employer() { AppUser = appUser });
@@ -121,12 +134,10 @@ namespace JobApplicationSpam.Controllers
             return appUser;
         }
 
-        [HttpPost]
-        public string ConvertToPdf()
+        public string ConvertToPdf(string path)
         {
-            var path = Request.Form["path"];
             var fileName = Path.GetFileName(path);
-            var tmpPaths = new TmpPaths(path, GetAppUser().Id);
+            var tmpPaths = new UnzipPaths();
             var extension = Path.GetExtension(path);
             switch(extension)
             {
@@ -134,7 +145,48 @@ namespace JobApplicationSpam.Controllers
                     return path;
                 case ".odt":
                     ZipFile.ExtractToDirectory(path, tmpPaths.UnzipTo);
-                    ReplaceInDirectory(tmpPaths.UnzipTo, new Dictionary<string, string> { ["$meinVorname"] = "Rene" });
+                    ReplaceInDirectory(tmpPaths.UnzipTo, new Dictionary<string, string> { ["$myFirstName" ] = "Rene", ["$meinVorname"] = "Rene" });
+                    ZipFile.CreateFromDirectory(tmpPaths.UnzipTo, Path.Combine(tmpPaths.ZipTo, fileName));
+
+                    var pdfOutputPath = Path.ChangeExtension(path, ".pdf");
+                    System.IO.File.Delete(pdfOutputPath);
+                    using (var process1 = new System.Diagnostics.Process())
+                    {
+                        process1.StartInfo.FileName = "C:/Program Files/LibreOffice 5/program/python.exe";
+                        process1.StartInfo.UseShellExecute = false;
+                        process1.StartInfo.Arguments =
+                        String.Format(@" ""{0}"" --format pdf --output=""{1}"" ""{2}"" ", "c:/Program Files/unoconv/unoconv", pdfOutputPath, path);
+                        process1.StartInfo.CreateNoWindow = true;
+                        process1.Start();
+                        process1.WaitForExit();
+                    }
+                    if (System.IO.File.Exists(pdfOutputPath))
+                    {
+                        return pdfOutputPath;
+                    }
+                    else
+                    {
+                        throw new Exception("File was not converted");
+                    }
+                default:
+                    throw new Exception($"Unknown file extension: {extension}");
+            }
+        }
+
+        [HttpPost]
+        public string ConvertToPdf()
+        {
+            var path = Request.Form["path"];
+            var fileName = Path.GetFileName(path);
+            var tmpPaths = new UnzipPaths();
+            var extension = Path.GetExtension(path);
+            switch(extension)
+            {
+                case ".pdf":
+                    return path;
+                case ".odt":
+                    ZipFile.ExtractToDirectory(path, tmpPaths.UnzipTo);
+                    ReplaceInDirectory(tmpPaths.UnzipTo, new Dictionary<string, string> { ["$myFirstName"] = "Rene" });
                     ZipFile.CreateFromDirectory(tmpPaths.UnzipTo, Path.Combine(tmpPaths.ZipTo, fileName));
                     return tmpPaths.ZipTo;
                 default:
@@ -169,10 +221,10 @@ namespace JobApplicationSpam.Controllers
             var appUser = dbContext.AppUsers.Single(x => x.Id == "538b98c6-e34a-4fb4-8ee5-0731d8720569");
             var document = GetDocument(appUser, "documentName");
             var files = Request.Form.Files;
-            Directory.CreateDirectory("c:/users/rene/uploadtest/");
             foreach(var file in Request.Form.Files)
             {
-                var savePath = $"c:/users/rene/uploadtest/{file.FileName}";
+                var userPaths = new UserPaths(file.FileName, appUser.Id);
+                var savePath = Path.Combine(userPaths.UserDirectory, file.FileName);
                 using (var fileStream = System.IO.File.Create(savePath))
                 {
                     file.OpenReadStream().CopyTo(fileStream);
@@ -181,7 +233,22 @@ namespace JobApplicationSpam.Controllers
                 dbContext.Add(documentFile);
             }
             dbContext.SaveChanges();
-            RedirectToAction("Index");
+        }
+
+        private JobApplicationSpamState GetJobApplicationSpamState()
+        {
+            var appUser = GetAppUser();
+            var document = GetDocument(appUser, "someDocumentName");
+            return
+                new JobApplicationSpamState
+                {
+                    Document = document,
+                    UserValues = (UserValues)GetDbObject("UserValues", appUser, document),
+                    Employer = (Employer)GetDbObject("Employer", appUser, document),
+                    DocumentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document),
+                    CustomVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document),
+                    DocumentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document)
+                };
         }
 
         private Document GetDocument(AppUser appUser, string documentName)
@@ -303,6 +370,8 @@ namespace JobApplicationSpam.Controllers
                             return documentFiles;
                         }
                     }
+                case "Document":
+                    return document;
 
                 default:
                     throw new Exception($"Table not found: {table}");

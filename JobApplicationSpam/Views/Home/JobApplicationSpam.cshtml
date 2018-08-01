@@ -1,46 +1,40 @@
 ﻿@model JobApplicationSpamState
 @{
     Layout = "_Layout";
+    var t = Translations.getTranslationsDict("de");
 }
-
-<pre>
-@Model.Document.JobName
-</pre>
-<br />
-<br />
-<br />
 
 @await Html.PartialAsync(
     "_Page",
     new Page
     {
         Id = "UserValues",
-        Header = "User values",
+        Header = t["UserValues"],
         Fields =
             new Field[]
             {
                 new RadioField
                 {
-                    LabelText = "Gender",
+                    LabelText = t["Gender"],
                     GroupName ="UserValues_Gender",
                     Id = "UserValues_Gender",
                     Value = Model.UserValues.Gender,
                     Items =
                         new []
                         {
-                            new RadioItem { Id = "UserValues_GenderMale", LabelText = "male", Value = "m" },
-                            new RadioItem { Id = "UserValues_GenderFemale", LabelText = "female", Value = "f" },
-                            new RadioItem { Id = "UserValues_GenderUnknown", LabelText = "unknown", Value = "u" }
+                            new RadioItem { Id = "UserValues_GenderMale", LabelText = t["Male"], Value = "m" },
+                            new RadioItem { Id = "UserValues_GenderFemale", LabelText = t["Female"], Value = "f" },
+                            new RadioItem { Id = "UserValues_GenderUnknown", LabelText = t["Unknown"], Value = "u" }
                         }
                 },
-                new InputField { LabelText = "Degree", Id = "UserValues_Degree", OdtVariable = "$meinTitel", Value = Model.UserValues.Degree },
-                new InputField { LabelText = "First name", Id = "UserValues_FirstName", OdtVariable = "$meinVorname", Value = Model.UserValues.FirstName },
-                new InputField { LabelText = "Last name", Id = "UserValues_LastName", OdtVariable = "$meinNachname", Value = Model.UserValues.LastName },
-                new InputField { LabelText = "Street", Id = "UserValues_Street", OdtVariable = "$meineStrasse", Value = Model.UserValues.Street },
-                new InputField { LabelText = "Postcode", Id = "UserValues_Postcode", OdtVariable = "$meinePlz", Value = Model.UserValues.Postcode },
-                new InputField { LabelText = "City", Id = "UserValues_City", OdtVariable = "$meineStadt", Value = Model.UserValues.Phone },
-                new InputField { LabelText = "Phone", Id = "UserValues_Phone", OdtVariable = "$meineTelefonnr", Value = Model.UserValues.Phone },
-                new InputField { LabelText = "MobilePhone", Id = "UserValues_MobilePhone", OdtVariable = "$meineMobilnr", Value = Model.UserValues.MobilePhone }
+                new InputField { LabelText = t["Degree"], Id = "UserValues_Degree", OdtVariable = "$meinTitel", Value = Model.UserValues.Degree },
+                new InputField { LabelText = t["FirstName"], Id = "UserValues_FirstName", OdtVariable = "$meinVorname", Value = Model.UserValues.FirstName },
+                new InputField { LabelText = t["LastName"], Id = "UserValues_LastName", OdtVariable = "$meinNachname", Value = Model.UserValues.LastName },
+                new InputField { LabelText = t["Street"], Id = "UserValues_Street", OdtVariable = "$meineStrasse", Value = Model.UserValues.Street },
+                new InputField { LabelText = t["Postcode"], Id = "UserValues_Postcode", OdtVariable = "$meinePlz", Value = Model.UserValues.Postcode },
+                new InputField { LabelText = t["City"], Id = "UserValues_City", OdtVariable = "$meineStadt", Value = Model.UserValues.Phone },
+                new InputField { LabelText = t["Phone"], Id = "UserValues_Phone", OdtVariable = "$meineTelefonnr", Value = Model.UserValues.Phone },
+                new InputField { LabelText = t["MobilePhone"], Id = "UserValues_MobilePhone", OdtVariable = "$meineMobilnr", Value = Model.UserValues.MobilePhone }
             }
     }
 )
@@ -49,13 +43,13 @@
     new Page
     {
         Id = "DocumentEmail",
-        Header = "Email",
+        Header = t["Email"],
         Fields =
             new Field[]
             {
-                new InputField { LabelText = "Subject", Id = "DocumentEmail_Subject", Value = Model.DocumentEmail.Subject },
-                new TextareaField { Height = "400px", LabelText = "Body", Id = "DocumentEmail_Body", Value = Model.DocumentEmail.Body },
-                new InputField { LabelText = "Attachment name", Id = "DocumentEmail_AttachmentName", Value = Model.DocumentEmail.AttachmentName }
+                new InputField { LabelText = t["Subject"], Id = "DocumentEmail_Subject", Value = Model.DocumentEmail.Subject },
+                new TextareaField { Height = "400px", LabelText = t["Body"], Id = "DocumentEmail_Body", Value = Model.DocumentEmail.Body },
+                new InputField { LabelText = t["AttachmentName"], Id = "DocumentEmail_AttachmentName", Value = Model.DocumentEmail.AttachmentName }
             }
     }
 )
@@ -65,37 +59,37 @@
     new Page
     {
         Id = "ApplyNow",
-        Header = "Apply Now",
+        Header = t["ApplyNow"],
         Fields =
             new Field[]
             {
-                new InputField { LabelText = "Apply as", Id = "Document_JobName", OdtVariable = "$jobName", Value = Model.Document.JobName },
-                new InputField { LabelText = "User email", Id = "UserValues_Email", OdtVariable = "$meineEmail", Value = Model.UserValues.Email },
-                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton_Top", Class = "applyNow" },
-                new InputField { LabelText = "Company name", Id = "Employer_Company", OdtVariable = "$chefFirma", Value = Model.Employer.Company },
+                new InputField { LabelText = t["ApplyAs"], Id = "Document_JobName", OdtVariable = "$jobName", Value = Model.Document.JobName },
+                new InputField { LabelText = t["UserEmail"], Id = "UserValues_Email", OdtVariable = "$meineEmail", Value = Model.UserValues.Email },
+                new ButtonField { LabelText = t["ApplyNowButton"], Id = "ApplyNow_SendButton_Top", Class = "applyNow" },
+                new InputField { LabelText = t["Company"], Id = "Employer_Company", OdtVariable = "$chefFirma", Value = Model.Employer.Company },
                 new RadioField
                 {
-                    LabelText = "Gender",
-                    GroupName ="Employer_Gender",
+                    LabelText = t["Gender"],
+                    GroupName  ="Employer_Gender",
                     Id = "Employer_Gender",
                     Value = Model.Employer.Gender,
                     Items =
                         new []
                         {
-                            new RadioItem { Id = "Employer_GenderMale", LabelText = "male", Value = "m" },
-                            new RadioItem { Id = "Employer_GenderFemale", LabelText = "female", Value = "f" },
-                            new RadioItem { Id = "Employer_GenderUnknown", LabelText = "unknown", Value = "u" }
+                            new RadioItem { Id = "Employer_GenderMale", LabelText = t["Male"], Value = "m" },
+                            new RadioItem { Id = "Employer_GenderFemale", LabelText = t["Female"], Value = "f" },
+                            new RadioItem { Id = "Employer_GenderUnknown", LabelText = t["Unknown"], Value = "u" }
                         }
                 },
-                new InputField { LabelText = "Degree", Id = "Employer_Degree", OdtVariable = "$chefTitel", Value = Model.Employer.Degree },
-                new InputField { LabelText = "First name", Id = "Employer_FirstName", OdtVariable = "$chefVorname", Value = Model.Employer.FirstName },
-                new InputField { LabelText = "Last name", Id = "Employer_LastName", OdtVariable = "$chefNachname", Value = Model.Employer.LastName },
-                new InputField { LabelText = "Street", Id = "Employer_Street", OdtVariable = "$chefStrasse", Value = Model.Employer.Street },
-                new InputField { LabelText = "Postcode", Id = "Employer_Postcode", OdtVariable = "$chefPlz", Value = Model.Employer.Postcode },
-                new InputField { LabelText = "City", Id = "Employer_City", OdtVariable = "$chefStadt", Value = Model.Employer.City },
-                new InputField { LabelText = "Phone", Id = "Employer_Phone", OdtVariable = "$chefTelefonnr", Value = Model.Employer.Phone },
-                new InputField { LabelText = "MobilePhone", Id = "Employer_MobilePhone", OdtVariable = "$chefMobilnr", Value = Model.Employer.MobilePhone },
-                new ButtonField { LabelText = "Apply now!", Id = "ApplyNow_SendButton_Bottom", Class="applyNow" }
+                new InputField { LabelText = t["Degree"], Id = "Employer_Degree", OdtVariable = "$chefTitel", Value = Model.Employer.Degree },
+                new InputField { LabelText = t["FirstName"], Id = "Employer_FirstName", OdtVariable = "$chefVorname", Value = Model.Employer.FirstName },
+                new InputField { LabelText = t["LastName"], Id = "Employer_LastName", OdtVariable = "$chefNachname", Value = Model.Employer.LastName },
+                new InputField { LabelText = t["Street"], Id = "Employer_Street", OdtVariable = "$chefStrasse", Value = Model.Employer.Street },
+                new InputField { LabelText = t["Postcode"], Id = "Employer_Postcode", OdtVariable = "$chefPlz", Value = Model.Employer.Postcode },
+                new InputField { LabelText = t["City"], Id = "Employer_City", OdtVariable = "$chefStadt", Value = Model.Employer.City },
+                new InputField { LabelText = t["Phone"], Id = "Employer_Phone", OdtVariable = "$chefTelefonnr", Value = Model.Employer.Phone },
+                new InputField { LabelText = t["MobilePhone"], Id = "Employer_MobilePhone", OdtVariable = "$chefMobilnr", Value = Model.Employer.MobilePhone },
+                new ButtonField { LabelText = t["ApplyNowButton"], Id = "ApplyNow_SendButton_Bottom", Class="applyNow" }
             }
     }
 )
@@ -116,7 +110,7 @@
     new Page
     {
         Id = "Documents",
-        Header = "Documents",
+        Header = t["Documents"],
         Fields =
             new Field[]
             {
@@ -150,8 +144,8 @@
     new Page
     {
         Id = "CustomVariable",
-        Header = "Custom variables",
+        Header = t["CustomVariables"],
         Fields =
-            customVariableFields.Append(new ButtonField { Id = "AddVariable", LabelText = "Add a variable", Class = "addVariable" })
+            customVariableFields.Append(new ButtonField { Id = t["AddVariable"], LabelText = t["AddVariable"], Class = "addVariable" })
     }
 )
