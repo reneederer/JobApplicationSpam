@@ -9,6 +9,8 @@ using System.IO.Compression;
 using PdfSharp.Pdf;
 using PdfSharp;
 using PdfSharp.Pdf.IO;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
 
 namespace JobApplicationSpam.Controllers
 {

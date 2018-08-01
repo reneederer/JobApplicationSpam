@@ -4,17 +4,26 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <meta name="charset" content="UTF-8" />
-    <link rel="stylesheet" href="~/bootstrap/dist/css/bootstrap.css" />
-    <link rel="stylesheet" href="~/Font-Awesome/web-fonts-with-css/css/fontawesome-all.css" />
     <script src="~/jQuery/dist/jquery.js"></script>
+    <script src="~/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="~/JobApplicationSpam/js/site.js"></script>
+    <link rel="stylesheet" href="~/Font-Awesome/web-fonts-with-css/css/fontawesome-all.css" />
+    <link rel="stylesheet" href="~/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/JobApplicationSpam/css/site.css" />
     <title>Bewerbungsspam</title>
 </head>
 <body>
+    @await  Html.PartialAsync(
+        "_LoginModal", new AccountModel()
+    )
+
     <div class="container">
         <div class="nav navbar mainBackgroundColor mb-3">
             <h3><a style="color: white" href="#">Bewerbungsspam</a></h3>
+            <div class="float-right">
+                <div class="text-center" style="color: white;"><h5>@User.Identity.Name</h5></div>
+                <a href="#" class="btn btn-primary btn-lg text-center" role="button" data-toggle="modal" data-target="#login-modal">Login</a>
+            </div>
         </div>
         @{
             var menuItems =

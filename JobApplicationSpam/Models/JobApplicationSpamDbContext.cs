@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace JobApplicationSpam.Models
 {
-    public class JobApplicationSpamDbContext : DbContext
+    public class JobApplicationSpamDbContext : IdentityDbContext<AppUser>
     {
         public JobApplicationSpamDbContext(DbContextOptions<JobApplicationSpamDbContext> options)
             : base(options)

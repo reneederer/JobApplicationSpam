@@ -34,8 +34,7 @@ namespace JobApplicationSpam
                         options.Password.RequireDigit = false;
                         options.User.RequireUniqueEmail = true;
                     }
-                )
-                .AddEntityFrameworkStores<JobApplicationSpamDbContext>().AddDefaultTokenProviders();
+                ).AddEntityFrameworkStores<JobApplicationSpamDbContext>().AddDefaultTokenProviders();
             services.AddMvc();
         }
 
