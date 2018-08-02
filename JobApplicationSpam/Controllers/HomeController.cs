@@ -36,6 +36,11 @@ namespace JobApplicationSpam.Controllers
                 );
         }
 
+        public ViewResult Account()
+        {
+            return View("Account", GetJobApplicationSpamState());
+        }
+
         [HttpPost]
         public void Save()
         {

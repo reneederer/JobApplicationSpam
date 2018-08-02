@@ -54,10 +54,36 @@ namespace JobApplicationSpam.Models
         [Required]
         [UIHint("email")]
         public string Email { get; set; }
+
         [Required]
         [UIHint("password")]
         public string Password { get; set; }
 
+        public bool ModalVisible { get; set; } = false;
+
+        public string CurrentTab { get; set; } = "Login";
+    }
+
+    public class LoginModel
+    {
+        [Required]
+        [UIHint("email")]
+        public string Email { get; set; }
+
+        [Required]
+        [UIHint("password")]
+        public string Password { get; set; }
+    }
+
+    public class RegisterModel
+    {
+        [Required]
+        [UIHint("email")]
+        public string Email { get; set; }
+
+        [Required]
+        [UIHint("password")]
+        public string Password { get; set; }
     }
 
 

@@ -49,6 +49,7 @@ $(document).on('click', '.applyNow', function () {
 $(document).on('change', '.uploadFile', function () {
     uploadFile($(this).get(0))
     window.location.reload()
+    alert("reload")
 })
 
 $(document).on('click', '.addVariable', function () {
@@ -132,6 +133,11 @@ $(function () {
     $('#lost_login_btn').click(function () { modalAnimate($formLost, $formLogin); });
     $('#lost_register_btn').click(function () { modalAnimate($formLost, $formRegister); });
     $('#register_lost_btn').click(function () { modalAnimate($formRegister, $formLost); });
+
+    var data = {
+        Email: 'Andrew',
+        Password: 'Lock'
+    }
 
     function modalAnimate($oldForm, $newForm) {
         var $oldH = $oldForm.height();

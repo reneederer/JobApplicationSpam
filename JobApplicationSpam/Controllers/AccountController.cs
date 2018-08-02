@@ -18,40 +18,42 @@ namespace JobApplicationSpam.Controllers
             signInManager = signInMgr;
         }
 
+        [HttpGet]
         [AllowAnonymous]
         public IActionResult Login(string returnUrl)
         {
-            ViewBag.returnUrl = returnUrl;
             return View();
         }
 
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(AccountModel details, string returnUrl)
+        public async Task<IActionResult> Login(LoginModel loginModel, string returnUrl)
         {
-            /*
-            var appUser = new AppUser { UserName = details.Email, Email = details.Email };
-            appUser.PasswordHash = userManager.PasswordHasher.HashPassword(appUser, details.Password);
-            var result1 = await userManager.CreateAsync(appUser);
-            */
             if(ModelState.IsValid)
             {
-                AppUser user = await userManager.FindByEmailAsync(details.Email);
+                AppUser user = await userManager.FindByEmailAsync(loginModel.Email);
                 if(user != null)
                 {
                     await signInManager.SignOutAsync();
                     Microsoft.AspNetCore.Identity.SignInResult result =
-                        await signInManager.PasswordSignInAsync(user, details.Password, false, false);
+                        await signInManager.PasswordSignInAsync(user, loginModel.Password, false, false);
                     if(result.Succeeded)
                     {
-                        return View(details);
-                        //return Redirect(returnUrl ?? "/");
+                        return Redirect("/");
                     }
                 }
-                ModelState.AddModelError(nameof(AccountModel.Email), "Invalid email or password");
+                ModelState.AddModelError(nameof(LoginModel.Email), "Invalid email or password");
             }
-            return View(details);
+            return View("/Home/Index");
+        }
+
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Register(string returnUrl)
+        {
+            return View();
         }
 
         [HttpPost]
@@ -84,9 +86,23 @@ namespace JobApplicationSpam.Controllers
                     ModelState.AddModelError(nameof(AccountModel.Email), "Email already registered.");
                 }
             }
-            return View(details);
+            return View();
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ForgotPassword(string returnUrl)
+        {
+            return View();
         }
 
 
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(string email, string returnUrl)
+        {
+            return View();
+        }
     }
 }

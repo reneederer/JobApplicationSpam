@@ -11,7 +11,7 @@ namespace JobApplicationSpam.Models
         public IEnumerable<DocumentFile> DocumentFiles { get; set; } = new List<DocumentFile>();
         public UserValues UserValues { get; set; }
         public Employer Employer { get; set; }
-        //public AccountModel LoginModel { get; set; }
+        public AccountModel Account { get; set; } = new AccountModel();
     }
 
     public abstract class Field
