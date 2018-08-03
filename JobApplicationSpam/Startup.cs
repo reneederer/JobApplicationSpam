@@ -12,7 +12,7 @@ namespace JobApplicationSpam
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
+        public static IConfiguration Configuration { get; set;  }
 
         public Startup(IConfiguration configuration)
         {
@@ -27,7 +27,7 @@ namespace JobApplicationSpam
                     options.UseNpgsql(Configuration["Data:JobApplicationSpam:ConnectionString"]))
                 .AddIdentity<AppUser, IdentityRole>(options =>
                     {
-                        options.Password.RequiredLength = 0;
+                        options.Password.RequiredLength = 1;
                         options.Password.RequireNonAlphanumeric = false;
                         options.Password.RequireLowercase = false;
                         options.Password.RequireUppercase = false;

@@ -11,6 +11,7 @@
     <PackageReference Include="Npgsql" Version="4.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.Postgresql" Version="2.1.1.1" />
     <PackageReference Include="PdfSharp" Version="1.32.3057" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
     <DotNetCliReference Include="Microsoft.EntityFrameworkCre.Tools.DotNet" Version="2.1.0" />
   </ItemGroup>
@@ -21,6 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="Views\Account\ChangePassword.cshtml">
+      <Pack>$(IncludeRazorContentInPack)</Pack>
+    </Content>
     <Content Update="Views\Account\Login.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>

@@ -47,6 +47,12 @@ namespace JobApplicationSpam.Models
 
     public class AppUser : IdentityUser
     {
+        public string ConfirmEmailGuid { get; set; } = Guid.NewGuid().ToString();
+        public DateTime CreatedOn { get; set; } = DateTime.Now;
+        public string KeepLoggedInGuid { get; set; }
+        public DateTime? KeepLoggedInExpiresOn { get; set; } = null;
+        public string ChangePasswordGuid { get; set; } = null;
+        public DateTime? ChangePasswordExpiresOn = null;
     }
 
     public class AccountModel
@@ -84,6 +90,20 @@ namespace JobApplicationSpam.Models
         [Required]
         [UIHint("password")]
         public string Password { get; set; }
+    }
+
+    public class ChangePasswordModel
+    {
+        [Required]
+        [UIHint("password")]
+        public string Password { get; set; }
+    }
+
+    public class ForgotPasswordModel
+    {
+        [Required]
+        [UIHint("email")]
+        public string Email { get; set; }
     }
 
 
