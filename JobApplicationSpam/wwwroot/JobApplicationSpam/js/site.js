@@ -95,18 +95,15 @@ function applyNow() {
 }
 
 function addVariable() {
-    var formData = new FormData();
-    formData.append('path', 'c:/users/rene/Downloads/hallo.odt')
-    $.ajax({
-        method: 'post',
-        contentType: false,
-        processData: false,
-        cache: false,
-        url: '/Home/ConvertToPdf',
-        data: formData
-    }).done(function () {
-        alert("asdf")
-    });
+    var parent = $('#CustomVariables')
+    var index = parent.children('div').length + 1
+    alert(index)
+    var elId = "CustomVariables_Text_" + index
+    var el = $(' \
+        <div class="form-group"> \
+        <label for="' + elId + '"><b></b></label> \
+        <textarea id="' + elId + '" name="' + elId + '" class="form-control field" style="min-height: 150px"></textarea>');
+    el.insertBefore(parent.children().last())
 }
 
 
