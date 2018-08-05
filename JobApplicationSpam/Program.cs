@@ -17,21 +17,17 @@ namespace JobApplicationSpam
     {
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Run();
+            CreateWebHostBuilder(args).Build().Run();
         }
 
-        public static IWebHost CreateWebHostBuilder(string[] args)
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(logRepository, new FileInfo("c:/users/rene/source/repos/jobapplicationspam/jobapplicationspam/log4net.config"));
             return
-                WebHost.CreateDefaultBuilder(args)
-                    .UseStartup<Startup>()
-                    .ConfigureLogging((hostingContext, logging) =>
-                        {
-                            //logging.AddLog4Net();
-                            logging.SetMinimumLevel(LogLevel.Debug);
-                        }).Build();
+                WebHost
+                    .CreateDefaultBuilder(args)
+                    .UseStartup<Startup>();
         }
     }
 }

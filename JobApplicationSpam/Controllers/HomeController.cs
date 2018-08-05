@@ -13,10 +13,16 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using System.Reflection;
 
 namespace JobApplicationSpam.Controllers
 {
+    class StringLengthComparer : IComparer<string>
+    {
+        public int Compare(string x, string y)
+        {
+            return x.Length.CompareTo(y.Length);
+        }
+    }
 
     [Authorize]
     public class HomeController : Controller
@@ -37,13 +43,13 @@ namespace JobApplicationSpam.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
-            try
+            var appUser1 = await userManager.FindByEmailAsync("q@q.de");
+            if (appUser1 != null)
             {
-                var appUser1 = await userManager.FindByEmailAsync("q@q.de");
                 var r2 = await signInManager.PasswordSignInAsync(appUser1, "1234", false, false);
-            }
-            catch
-            {
+                if(r2.Succeeded)
+                {
+                }
             }
             return RedirectToAction("J", "Home");
         }
@@ -68,14 +74,6 @@ namespace JobApplicationSpam.Controllers
                 var table = split[0];
                 var column = split[1];
                 object index = split.Length > 2 ? (object)Int32.Parse(split[2]) : null;
-                /*MethodInfo method =
-                    typeof(JobApplicationSpamDbContext)
-                        .GetMethod(
-                            "Find",
-                            new Type[] { (new object[] { }).GetType() });
-                MethodInfo generic =
-                    method.MakeGenericMethod(Type.GetType($"JobApplicationSpam.Models.{table}"));
-                    */
                 var dbObject = GetDbObject(table, appUser, document, index);
                 dbObject.GetType().GetProperty(column).SetValue(dbObject, kv.Value.ToString());
                 dbContext.Update(dbObject);
@@ -86,7 +84,6 @@ namespace JobApplicationSpam.Controllers
         [HttpPost]
         public async Task PerformFileActions()
         {
-            System.IO.File.AppendAllText("C:/users/rene/exception.txt", "--------------------------------------------------");
             var appUser = await GetOrCreateAppUser();
             var document = GetDocument(appUser, "documentName");
             var documentFiles = ((IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document)).OrderBy(x => x.Id).AsEnumerable();
@@ -114,11 +111,9 @@ namespace JobApplicationSpam.Controllers
                 };
             foreach(var kv in Request.Form)
             {
-                System.IO.File.AppendAllText("C:/users/rene/exception.txt", "\r\nkey: " + kv.Key + ", value: " + kv.Value);
                 var index = Int32.Parse(kv.Value);
                 if(kv.Key.StartsWith("MoveUp"))
                 {
-                    System.IO.File.AppendAllText("C:/users/rene/exception.txt", "index1: " + index + ", index2:" + (index - 1));
                     swap(documentFiles, index, index - 1);
                 }
                 else if(kv.Key.StartsWith("MoveDown"))
@@ -129,16 +124,12 @@ namespace JobApplicationSpam.Controllers
                 {
                     try
                     {
-                        System.IO.File.AppendAllText("C:/users/rene/exception.txt", "before index: " + index + ", length: " + documentFiles.Count());
                         var rowToRemove = dbContext.Find<DocumentFile>(documentFiles.ElementAt(index).Id);
                         dbContext.Remove(rowToRemove);
-                        dbContext.SaveChanges();
                         documentFiles = documentFiles.Where(x => x.Id != rowToRemove.Id);
-                        System.IO.File.AppendAllText("C:/users/rene/exception.txt", "\r\n\r\nafter index: " + index + ", length: " + documentFiles.Count());
                     }
                     catch(Exception e)
                     {
-                        System.IO.File.AppendAllText("C:/users/rene/exception.txt", e.ToString());
                     }
                 }
             }
@@ -169,9 +160,10 @@ namespace JobApplicationSpam.Controllers
                 dbContext.Add(sentApplication);
 
                 var pdfFilePaths = new List<string>();
+                var dict = getVariableDict(employer, userValues, documentEmail, customVariables, document.JobName);
                 foreach (var documentFile in documentFiles)
                 {
-                    pdfFilePaths.Add(ConvertToPdf(documentFile.Path));
+                    pdfFilePaths.Add(ConvertToPdf(documentFile.Path, dict));
                 }
 
                 var mergedPath = Path.Combine(new TmpPath().Path, "mypdf.pdf");
@@ -240,7 +232,44 @@ namespace JobApplicationSpam.Controllers
             return appUser;
         }
 
-        public string ConvertToPdf(string path)
+        private SortedDictionary<string, string> getVariableDict(Employer employer, UserValues userValues, DocumentEmail documentEmail, IEnumerable<CustomVariable> customVariables, string jobName)
+        {
+            var dict =
+                new SortedDictionary<string, string>(new StringLengthComparer())
+                {
+                    ["$chefFirma"] = employer.Company,
+                    ["$chefGeschlecht"] = employer.Gender,
+                    ["$chefTitel"] = employer.FirstName,
+                    ["$chefVorname"] = employer.FirstName,
+                    ["$chefNachname"] = employer.LastName,
+                    ["$chefStrasse"] = employer.Street,
+                    ["$chefPostleitzahl"] = employer.Postcode,
+                    ["$chefStadt"] = employer.City,
+                    ["$chefEmail"] = employer.Email,
+                    ["$chefTelefonnummer"] = employer.Phone,
+                    ["$chefMobilnummer"] = employer.MobilePhone,
+                    ["$meinGeschlecht"] = userValues.Gender,
+                    ["$meinTitel"] = userValues.FirstName,
+                    ["$meinVorname"] = userValues.FirstName,
+                    ["$meinNachname"] = userValues.LastName,
+                    ["$meinStrasse"] = userValues.Street,
+                    ["$meinPostleitzahl"] = userValues.Postcode,
+                    ["$meinStadt"] = userValues.City,
+                    ["$meinEmail"] = userValues.FirstName,
+                    ["$meinTelefonnummer"] = userValues.Phone,
+                    ["$meinMobilnummer"] = userValues.MobilePhone,
+                    ["$beruf"] = jobName,
+                    ["$emailBetreff"] = documentEmail.Subject,
+                    ["$emailText"] = documentEmail.Body,
+                    ["$emailAnhang"] = documentEmail.AttachmentName,
+                    ["$tagHeute"] = DateTime.Today.Day.ToString("00"),
+                    ["$monatHeute"] = DateTime.Today.Month.ToString("00"),
+                    ["$jahrHeute"] = DateTime.Today.Year.ToString("0000"),
+                };
+            return dict;
+        }
+
+        public string ConvertToPdf(string path, SortedDictionary<string, string> dict)
         {
             var fileName = Path.GetFileName(path);
             var tmpPaths = new UnzipPaths();
@@ -251,7 +280,7 @@ namespace JobApplicationSpam.Controllers
                     return path;
                 case ".odt":
                     ZipFile.ExtractToDirectory(path, tmpPaths.UnzipTo);
-                    ReplaceInDirectory(tmpPaths.UnzipTo, new Dictionary<string, string> { ["$myFirstName" ] = "Rene", ["$meinVorname"] = "Rene" });
+                    ReplaceInDirectory(tmpPaths.UnzipTo, dict);
                     ZipFile.CreateFromDirectory(tmpPaths.UnzipTo, Path.Combine(tmpPaths.ZipTo, fileName));
 
                     var pdfOutputPath = Path.ChangeExtension(path, ".pdf");
@@ -300,7 +329,7 @@ namespace JobApplicationSpam.Controllers
             }
         }
 
-        private void ReplaceInDirectory(string path, Dictionary<string, string> dict)
+        private void ReplaceInDirectory(string path, IDictionary<string, string> dict)
         {
             foreach(var currentDir in Directory.EnumerateDirectories(path))
             {
@@ -367,6 +396,31 @@ namespace JobApplicationSpam.Controllers
             {
                 document = new Document { AppUser = appUser };
                 dbContext.Add(document);
+                var customVariables =
+                    new List<CustomVariable>()
+                    {
+                        new CustomVariable
+                        {
+                            Text = "$chefAnrede =\n\tmatch $chefGeschlecht with\n\t| \"m\" -> \"Herr\"\n\t| \"f\" -> \"Frau\"\n\t| \"u\" -> \"\"",
+                            Document = document
+                        },
+                        new CustomVariable
+                        {
+                            Text = "$anredeZeile =\n\tmatch $chefGeschlecht with\n\t| \"m\" -> \"Sehr geehrter Herr $chefTitel $chefNachname,\n\t| \"f\" -> \"Sehr geehrte Frau $chefTitel $chefNachname,\"\n\t| \"u\" -> \"Sehr geehrte Damen und Herren,\"",
+                            Document = document
+                        },
+                        new CustomVariable
+                        {
+                            Text = "$chefAnredeBriefkopf =\n\tmatch $chefGeschlecht with\n\t| \"m\" -> \"Herrn\"\n\t| \"f\" -> \"Frau\"\n\t| \"u\" -> \"\"",
+                            Document = document
+                        },
+                        new CustomVariable
+                        {
+                            Text = "$datumHeute = $tagHeute + \".\" + $monatHeute + \".\" + $jahrHeute",
+                            Document = document
+                        }
+                    };
+                dbContext.AddRange(customVariables);
                 dbContext.SaveChanges();
             }
             return document;

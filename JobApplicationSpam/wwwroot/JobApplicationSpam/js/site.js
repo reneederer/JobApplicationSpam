@@ -25,9 +25,9 @@ function save(saveData) {
         saveData = new FormData()
         var str = ""
         for (var pair of fileActions.entries()) {
-            str += "\n" + pair[0] + ": " + pair[1];
+            str += "\n" + pair[0] + ": " + pair[1]
         }
-        alert(str);
+        alert(str)
         if (fileActionsLength > 0) {
             $.ajax({
                 method: 'post',
@@ -86,7 +86,7 @@ function applyNow() {
         data: new FormData()
     }).done(function (data) {
         alert(data)
-        var j = JSON.parse(data);
+        var j = JSON.parse(data)
         alert(j.result)
         $("[id^='Employer_']").val("")
         $("[id^='Employer_Gender']").prop("checked", false)
@@ -97,12 +97,11 @@ function applyNow() {
 function addVariable() {
     var parent = $('#CustomVariables')
     var index = parent.children('div').length + 1
-    alert(index)
     var elId = "CustomVariables_Text_" + index
     var el = $(' \
         <div class="form-group"> \
         <label for="' + elId + '"><b></b></label> \
-        <textarea id="' + elId + '" name="' + elId + '" class="form-control field" style="min-height: 150px"></textarea>');
+        <textarea id="' + elId + '" name="' + elId + '" class="form-control field" style="min-height: 150px; overflow: auto"></textarea>')
     el.insertBefore(parent.children().last())
 }
 
@@ -111,7 +110,7 @@ function uploadFile(fileUpload) {
     if (fileUpload.files.length < 1) {
         return
     }
-    var formData = new FormData();
+    var formData = new FormData()
     formData.append(fileUpload.files[0].name, fileUpload.files[0])
     $.ajax({
         method: 'post',
