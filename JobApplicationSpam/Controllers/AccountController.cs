@@ -38,7 +38,6 @@ namespace JobApplicationSpam.Controllers
                 AppUser user = await userManager.FindByEmailAsync(loginModel.Email);
                 if(user != null)
                 {
-                    await signInManager.SignOutAsync();
                     Microsoft.AspNetCore.Identity.SignInResult result =
                         await signInManager.PasswordSignInAsync(user, loginModel.Password, false, false);
                     if(result.Succeeded)
@@ -75,7 +74,6 @@ namespace JobApplicationSpam.Controllers
                     var createResult = await userManager.CreateAsync(appUser);
                     if (createResult.Succeeded)
                     {
-                        await signInManager.SignOutAsync();
                         Microsoft.AspNetCore.Identity.SignInResult signInResult =
                             await signInManager.PasswordSignInAsync(appUser, details.Password, false, false);
                         if (signInResult.Succeeded)
@@ -128,33 +126,16 @@ namespace JobApplicationSpam.Controllers
                 var updateResult = await userManager.UpdateAsync(appUser);
                 if(updateResult.Succeeded)
                 {
-                    var emailUserName = Startup.Configuration["Data:JobApplicationSpam:Email:UserName"];
-                    var emailPassword = Startup.Configuration["Data:JobApplicationSpam:Email:Password"];
-                    var emailServer = Startup.Configuration["Data:JobApplicationSpam:Email:Server"];
-                    var emailPort = Int32.Parse(Startup.Configuration["Data:JobApplicationSpam:Email:Port"]);
-                    var fromName = "Bewerbungsspam";
-                    var fromAddress = new MailAddress("info@bewerbungsspam.de", fromName, System.Text.Encoding.UTF8);
-                    var subject = "Password recovery";
-                    var body = $"Dear user,\n\nyou can set a new password for your account by visiting this link:\nhttps://www.bewerbungsspam.de/Account/ChangePassword?email={model.Email}&changePasswordGuid={appUser.ChangePasswordGuid}\n\nYours dearly,\n\nwww.bewerbungsspam.de";
-
-                    using (var smtpClient = new SmtpClient(emailServer, emailPort))
-                    {
-                        smtpClient.EnableSsl = true;
-                        smtpClient.Credentials = new System.Net.NetworkCredential(emailUserName, emailPassword);
-                        var toAddress = new MailAddress(model.Email);
-                        var message = new MailMessage(fromAddress, toAddress) { SubjectEncoding = System.Text.Encoding.UTF8, Subject = subject, Body = body, BodyEncoding = System.Text.Encoding.UTF8 };
-                        /*
-                        let attachments =
-                            attachmentPathsAndNames
-                            |> List.map(fun(filePath, fileName)->
-                                let attachment = new Attachment(filePath)
-                                attachment.Name < -fileName
-                                message.Attachments.Add(attachment)
-                                attachment)
-                                */
-                        smtpClient.Send(message);
-
-                    }
+                    HelperFunctions.SendEmail(
+                        new EmailData
+                        {
+                            ToEmail = model.Email,
+                            FromEmail = "info@bewerbungsspam.de",
+                            FromName = "Bewerbungsspam",
+                            Subject = "Reset your password",
+                            Body = $"Dear user,\n\nyou can set a new password for your account by visiting this link:\nhttps://www.bewerbungsspam.de/Account/ChangePassword?email={model.Email}&changePasswordGuid={appUser.ChangePasswordGuid}\n\nYours dearly,\n\nwww.bewerbungsspam.de"
+                        }
+                    );
                 }
                 else
                 {
@@ -182,9 +163,11 @@ namespace JobApplicationSpam.Controllers
                 var email = Request.Query["email"];
                 var guid = Request.Query["changePasswordGuid"];
                 var appUser = await userManager.FindByEmailAsync(email);
-                if (guid == appUser.ChangePasswordGuid)
+                if (guid == appUser.ChangePasswordGuid && appUser.ChangePasswordExpiresOn > DateTime.Now)
                 {
-                    await signInManager.SignOutAsync();
+                    appUser.ChangePasswordGuid = null;
+                    appUser.ChangePasswordExpiresOn = null;
+                    await userManager.UpdateAsync(appUser);
                     await signInManager.SignInAsync(appUser, false);
                     return RedirectToAction("ChangePassword", "Account");
                 }
@@ -213,9 +196,9 @@ namespace JobApplicationSpam.Controllers
         }
 
 
-        [AllowAnonymous]
         public async Task<IActionResult> Logout(string returnUrl)
         {
+            HttpContext.Session.Clear();
             await signInManager.SignOutAsync();
             return Redirect("/");
         }

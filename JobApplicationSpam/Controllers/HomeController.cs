@@ -11,48 +11,59 @@ using PdfSharp;
 using PdfSharp.Pdf.IO;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Reflection;
 
 namespace JobApplicationSpam.Controllers
 {
+
+    [Authorize]
     public class HomeController : Controller
     {
+        private static readonly log4net.ILog log =
+             log4net.LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         JobApplicationSpamDbContext dbContext { get; }
-        public HomeController(JobApplicationSpamDbContext dbContext)
+        private UserManager<AppUser> userManager;
+        private SignInManager<AppUser> signInManager;
+
+        public HomeController(JobApplicationSpamDbContext dbContext, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
         {
             this.dbContext = dbContext;
+            this.userManager = userManager;
+            this.signInManager = signInManager;
         }
 
-        public ActionResult Index() =>
-            RedirectToAction("J");
-
-        public ViewResult J()
+        [AllowAnonymous]
+        public async Task<IActionResult> Index()
         {
-            var appUser = GetAppUser();
+            try
+            {
+                var appUser1 = await userManager.FindByEmailAsync("q@q.de");
+                var r2 = await signInManager.PasswordSignInAsync(appUser1, "1234", false, false);
+            }
+            catch
+            {
+            }
+            return RedirectToAction("J", "Home");
+        }
+
+        [AllowAnonymous]
+        public async Task<IActionResult> J()
+        {
+            var appUser = await GetOrCreateAppUser();
             var document = GetDocument(appUser, "documentName");
-            return
-                View(
-                    "JobApplicationSpam",
-                    GetJobApplicationSpamState()
-                );
-        }
-
-        public ViewResult Account()
-        {
-            return View("Account", GetJobApplicationSpamState());
+            return View("JobApplicationSpam", GetJobApplicationSpamState(appUser));
         }
 
         [HttpPost]
-        public void Save()
+        public async Task Save()
         {
-            if (!dbContext.AppUsers.Any())
-            {
-                dbContext.Add(new AppUser { Id = "538b98c6-e34a-4fb4-8ee5-0731d8720569" });
-                dbContext.SaveChanges();
-            }
-            var appUser = GetAppUser();
+            var appUser = await GetOrCreateAppUser();
             var document = GetDocument(appUser, "documentName");
             foreach (var kv in Request.Form)
             {
+
                 var split = kv.Key.Split(new char[] { '_' });
                 var table = split[0];
                 var column = split[1];
@@ -73,71 +84,159 @@ namespace JobApplicationSpam.Controllers
         }
 
         [HttpPost]
-        public void ApplyNow()
+        public async Task PerformFileActions()
         {
-            var appUser = GetAppUser();
+            System.IO.File.AppendAllText("C:/users/rene/exception.txt", "--------------------------------------------------");
+            var appUser = await GetOrCreateAppUser();
             var document = GetDocument(appUser, "documentName");
-            var documentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document);
-            var employer = (Employer)GetDbObject("Employer", appUser, document);
-            var userValues = (UserValues)GetDbObject("UserValues", appUser, document);
-            var customVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document);
-            var documentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document);
-            var sentApplication =
-                new SentApplication
+            var documentFiles = ((IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document)).OrderBy(x => x.Id).AsEnumerable();
+            Action<IEnumerable<DocumentFile>, int, int> swap =
+                (files, index1, index2) =>
                 {
-                    Document = document,
-                    Employer = employer,
-                    UserValues = userValues,
-                    SentDate = DateTime.Now
-                };
-            dbContext.Add(sentApplication);
-
-            var pdfFilePaths = new List<string>();
-            foreach(var documentFile in documentFiles)
-            {
-                pdfFilePaths.Add(ConvertToPdf(documentFile.Path));
-            }
-
-            var mergedPath = Path.Combine(new TmpPath().Path, "mypdf.pdf");
-            using (var outputDocument = new PdfDocument())
-            {
-                foreach(var pdfFilePath in pdfFilePaths)
-                {
-                    var inputDocument = PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import);
-                    for(int i = 0; i < inputDocument.Pages.Count; ++i)
+                    int count = documentFiles.Count();
+                    if (index1 < 0 || index2 < 0 || index1 >= count || index2 >= count)
                     {
-                        outputDocument.AddPage(inputDocument.Pages[i]);
+                        return;
+                    }
+                    var file1 = files.ElementAt(index1);
+                    var file2 = files.ElementAt(index2);
+                    var file1Copy = new DocumentFile(file1);
+
+                    file1.Index = file2.Index;
+                    file1.Name = file2.Name;
+                    file1.Path = file2.Path;
+                    file1.SizeInBytes = file2.SizeInBytes;
+
+                    file2.Index = file1Copy.Index;
+                    file2.Name = file1Copy.Name;
+                    file2.Path = file1Copy.Path;
+                    file2.SizeInBytes = file1Copy.SizeInBytes;
+                };
+            foreach(var kv in Request.Form)
+            {
+                System.IO.File.AppendAllText("C:/users/rene/exception.txt", "\r\nkey: " + kv.Key + ", value: " + kv.Value);
+                var index = Int32.Parse(kv.Value);
+                if(kv.Key.StartsWith("MoveUp"))
+                {
+                    System.IO.File.AppendAllText("C:/users/rene/exception.txt", "index1: " + index + ", index2:" + (index - 1));
+                    swap(documentFiles, index, index - 1);
+                }
+                else if(kv.Key.StartsWith("MoveDown"))
+                {
+                    swap(documentFiles, index, index + 1);
+                }
+                else if(kv.Key.StartsWith("Delete"))
+                {
+                    try
+                    {
+                        System.IO.File.AppendAllText("C:/users/rene/exception.txt", "before index: " + index + ", length: " + documentFiles.Count());
+                        var rowToRemove = dbContext.Find<DocumentFile>(documentFiles.ElementAt(index).Id);
+                        dbContext.Remove(rowToRemove);
+                        dbContext.SaveChanges();
+                        documentFiles = documentFiles.Where(x => x.Id != rowToRemove.Id);
+                        System.IO.File.AppendAllText("C:/users/rene/exception.txt", "\r\n\r\nafter index: " + index + ", length: " + documentFiles.Count());
+                    }
+                    catch(Exception e)
+                    {
+                        System.IO.File.AppendAllText("C:/users/rene/exception.txt", e.ToString());
                     }
                 }
-                outputDocument.Save(mergedPath);
             }
-
-            var documentCopy = new Document { JobName = document.JobName, AppUser = appUser };
-            dbContext.Add(documentCopy);
-            dbContext.Add(new Employer() { AppUser = appUser });
-            dbContext.Add(new UserValues(userValues) { AppUser = appUser });
-            dbContext.Add(new DocumentEmail(documentEmail) { Document = documentCopy });
-
-            foreach (var customVariable in customVariables)
-            {
-                dbContext.Add(new CustomVariable(customVariable) { Document = documentCopy });
-            }
-            foreach (var documentFile in documentFiles)
-            {
-                dbContext.Add(new DocumentFile(documentFile) { Document = documentCopy });
-            }
+            dbContext.UpdateRange(documentFiles);
             dbContext.SaveChanges();
         }
 
-        private AppUser GetAppUser()
+        [HttpPost]
+        public async Task<string> ApplyNow()
         {
-            var appUser = dbContext.AppUsers.SingleOrDefault(x => x.Id == "538b98c6-e34a-4fb4-8ee5-0731d8720569");
-            if(appUser == null)
+            try
             {
-                appUser = new AppUser { Id = "538b98c6-e34a-4fb4-8ee5-0731d8720569" };
-                dbContext.Add(appUser);
+                var appUser = await GetOrCreateAppUser();
+                var document = GetDocument(appUser, "documentName");
+                var documentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document);
+                var employer = (Employer)GetDbObject("Employer", appUser, document);
+                var userValues = (UserValues)GetDbObject("UserValues", appUser, document);
+                var customVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document);
+                var documentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document);
+                var sentApplication =
+                    new SentApplication
+                    {
+                        Document = document,
+                        Employer = employer,
+                        UserValues = userValues,
+                        SentDate = DateTime.Now
+                    };
+                dbContext.Add(sentApplication);
+
+                var pdfFilePaths = new List<string>();
+                foreach (var documentFile in documentFiles)
+                {
+                    pdfFilePaths.Add(ConvertToPdf(documentFile.Path));
+                }
+
+                var mergedPath = Path.Combine(new TmpPath().Path, "mypdf.pdf");
+                using (var outputDocument = new PdfDocument())
+                {
+                    foreach (var pdfFilePath in pdfFilePaths)
+                    {
+                        var inputDocument = PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import);
+                        for (int i = 0; i < inputDocument.Pages.Count; ++i)
+                        {
+                            outputDocument.AddPage(inputDocument.Pages[i]);
+                        }
+                    }
+                    outputDocument.Save(mergedPath);
+                }
+
+                var documentCopy = new Document { JobName = document.JobName, AppUser = appUser };
+                dbContext.Add(documentCopy);
+                dbContext.Add(new Employer() { AppUser = appUser });
+                dbContext.Add(new UserValues(userValues) { AppUser = appUser });
+                dbContext.Add(new DocumentEmail(documentEmail) { Document = documentCopy });
+
+                foreach (var customVariable in customVariables)
+                {
+                    dbContext.Add(new CustomVariable(customVariable) { Document = documentCopy });
+                }
+                foreach (var documentFile in documentFiles)
+                {
+                    dbContext.Add(new DocumentFile(documentFile) { Document = documentCopy });
+                }
                 dbContext.SaveChanges();
+                HelperFunctions.SendEmail(
+                    new EmailData
+                    {
+                        Attachments = new List<EmailAttachment> { new EmailAttachment { Path = mergedPath, Name = Path.GetFileName(mergedPath) } },
+                        Body = documentEmail.Body,
+                        Subject = documentEmail.Subject,
+                        ToEmail = userValues.Email,
+                        FromEmail = "info@bewerbungsspam.de",
+                        FromName = "Bewerbungsspam"
+                    }
+                );
+                return @"{ ""result"": ""succeeded"" }";
             }
+            catch(Exception err)
+            {
+                log.Error("", err);
+                return @"{ ""result"": ""failed"" }";
+            }
+        }
+
+        private async Task<AppUser> GetOrCreateAppUser()
+        {
+            var appUser = await userManager.GetUserAsync(HttpContext.User);
+            if(appUser != null)
+            {
+                return appUser;
+            }
+            appUser = new AppUser();
+            var createResult = await userManager.CreateAsync(appUser);
+            if(!createResult.Succeeded)
+            {
+                throw new Exception("Couldn't create user");
+            }
+            await signInManager.SignInAsync(appUser, false);
             return appUser;
         }
 
@@ -223,9 +322,9 @@ namespace JobApplicationSpam.Controllers
         }
 
         [HttpPost]
-        public void UploadFile()
+        public async Task UploadFile()
         {
-            var appUser = dbContext.AppUsers.Single(x => x.Id == "538b98c6-e34a-4fb4-8ee5-0731d8720569");
+            var appUser = await GetOrCreateAppUser();
             var document = GetDocument(appUser, "documentName");
             var files = Request.Form.Files;
             foreach(var file in Request.Form.Files)
@@ -242,9 +341,8 @@ namespace JobApplicationSpam.Controllers
             dbContext.SaveChanges();
         }
 
-        private JobApplicationSpamState GetJobApplicationSpamState()
+        private JobApplicationSpamState GetJobApplicationSpamState(AppUser appUser)
         {
-            var appUser = GetAppUser();
             var document = GetDocument(appUser, "someDocumentName");
             return
                 new JobApplicationSpamState
@@ -254,7 +352,8 @@ namespace JobApplicationSpam.Controllers
                     Employer = (Employer)GetDbObject("Employer", appUser, document),
                     DocumentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document),
                     CustomVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document),
-                    DocumentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document)
+                    DocumentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document),
+                    User = appUser
                 };
         }
 
@@ -374,7 +473,7 @@ namespace JobApplicationSpam.Controllers
                                 dbContext.DocumentFiles
                                     .Where(x => x.Document.Id == document.Id)
                                     .OrderBy(x => x.Id);
-                            return documentFiles;
+                            return documentFiles.AsEnumerable<DocumentFile>();
                         }
                     }
                 case "Document":

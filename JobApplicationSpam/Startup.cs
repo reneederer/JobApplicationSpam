@@ -7,6 +7,7 @@ using JobApplicationSpam.Models;
 using Npgsql;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace JobApplicationSpam
 {
@@ -32,9 +33,10 @@ namespace JobApplicationSpam
                         options.Password.RequireLowercase = false;
                         options.Password.RequireUppercase = false;
                         options.Password.RequireDigit = false;
-                        options.User.RequireUniqueEmail = true;
+                        options.User.RequireUniqueEmail = false;
                     }
                 ).AddEntityFrameworkStores<JobApplicationSpamDbContext>().AddDefaultTokenProviders();
+            services.AddSession();
             services.AddMvc();
         }
 
@@ -45,6 +47,7 @@ namespace JobApplicationSpam
                 .UseDeveloperExceptionPage()
                 .UseStaticFiles()
                 .UseAuthentication()
+                .UseSession()
                 .UseMvcWithDefaultRoute();
         }
     }

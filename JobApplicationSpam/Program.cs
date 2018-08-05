@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using log4net;
+using log4net.Config;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -14,11 +17,21 @@ namespace JobApplicationSpam
     {
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
+            CreateWebHostBuilder(args).Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>();
+        public static IWebHost CreateWebHostBuilder(string[] args)
+        {
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepository, new FileInfo("c:/users/rene/source/repos/jobapplicationspam/jobapplicationspam/log4net.config"));
+            return
+                WebHost.CreateDefaultBuilder(args)
+                    .UseStartup<Startup>()
+                    .ConfigureLogging((hostingContext, logging) =>
+                        {
+                            //logging.AddLog4Net();
+                            logging.SetMinimumLevel(LogLevel.Debug);
+                        }).Build();
+        }
     }
 }

@@ -49,10 +49,16 @@ namespace JobApplicationSpam.Models
     {
         public string ConfirmEmailGuid { get; set; } = Guid.NewGuid().ToString();
         public DateTime CreatedOn { get; set; } = DateTime.Now;
-        public string KeepLoggedInGuid { get; set; }
-        public DateTime? KeepLoggedInExpiresOn { get; set; } = null;
-        public string ChangePasswordGuid { get; set; } = null;
-        public DateTime? ChangePasswordExpiresOn = null;
+        public string KeepLoggedInGuid { get; set; } = Guid.NewGuid().ToString();
+        public DateTime? KeepLoggedInExpiresOn { get; set; } = DateTime.Now + TimeSpan.FromDays(7);
+        public string ChangePasswordGuid { get; set; } = Guid.NewGuid().ToString();
+        public DateTime? ChangePasswordExpiresOn = DateTime.Now + TimeSpan.FromDays(7);
+        public AppUser()
+        {
+            this.Id = Guid.NewGuid().ToString();
+            this.UserName = Guid.NewGuid().ToString();
+            this.Email = "guest@bewerbungsspam.de";
+        }
     }
 
     public class AccountModel

@@ -1,15 +1,15 @@
 ﻿@model DocumentFilesField
 
 <div id="@Model.Id">
-    <table class="table table-striped table-bordered">
-    @foreach(var fileField in Model.Files)
+    <table id="Documents_FileTable" class="table table-striped table-bordered">
+    @for(int i = 0; i < Model.Files.Count(); ++i)
     {
-        <tr>
-            <td style="width: 100%">@fileField.Name</td>
-            <td class="text-center mx-1"><i class="fa fa-trash"></i></td>
-            <td class="text-center mx-1"><i class="fa fa-download"></i></td>
-            <td class="text-center mx-1"><i class="fa fa-arrow-up"></i></td>
-            <td class="text-center mx-1"><i class="fa fa-arrow-down"></i></td>
+        <tr id="DocumentFiles_rows">
+            <td style="width: 100%">@Model.Files.ElementAt(i).Name</td>
+            <td class="documentFile_Delete text-center mx-1"><a href=#><i class="fa fa-trash"></i></a></td>
+            <td class="documentFile_Download text-center mx-1"><a href=#><i class="fa fa-download"></i></a></td>
+            <td class="documentFile_MoveUp text-center mx-1"><a href=#><i class="fa fa-arrow-up"></i></a></td>
+            <td class="documentFile_MoveDown text-center mx-1"><a href="#"><i class="fa fa-arrow-down"></i></a></td>
         </tr>
     }
     </table>

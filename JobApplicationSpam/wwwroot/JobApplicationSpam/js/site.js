@@ -10,6 +10,8 @@
 var timeUntillSave = 2000
 var saveTimer = null
 var saveData = new FormData()
+var fileActions = new FormData()
+var fileActionsLength = 0
 
 function save(saveData) {
     $.ajax({
@@ -21,23 +23,43 @@ function save(saveData) {
         data: saveData
     }).done(function () {
         saveData = new FormData()
-    });
+        var str = ""
+        for (var pair of fileActions.entries()) {
+            str += "\n" + pair[0] + ": " + pair[1];
+        }
+        alert(str);
+        if (fileActionsLength > 0) {
+            $.ajax({
+                method: 'post',
+                contentType: false,
+                processData: false,
+                cache: false,
+                url: '/Home/PerformFileActions',
+                data: fileActions
+            }).done(function () {
+                fileActions = new FormData()
+            })
+        }
+    })
+
 }
 
 $(document).on('input', '.field', function (ev) {
-    setSaveTimer($(this))
+    saveData.set($(this).attr('name'), $(this).val())
+    setSaveTimer()
 })
 
 $(document).on('change', '.field', function (ev) {
-    setSaveTimer($(this))
+    saveData.set($(this).attr('name'), $(this).val())
+    setSaveTimer()
 })
 
 $(document).on('click', '.field', function (ev) {
-    setSaveTimer($(this))
+    saveData.set($(this).attr('name'), $(this).val())
+    setSaveTimer()
 })
 
-function setSaveTimer(jEl) {
-    saveData.set(jEl.attr('name'), jEl.val())
+function setSaveTimer() {
     clearTimeout(saveTimer)
     saveTimer = setTimeout(function () {save(saveData)}, timeUntillSave)
 }
@@ -48,8 +70,6 @@ $(document).on('click', '.applyNow', function () {
 
 $(document).on('change', '.uploadFile', function () {
     uploadFile($(this).get(0))
-    window.location.reload()
-    alert("reload")
 })
 
 $(document).on('click', '.addVariable', function () {
@@ -64,7 +84,10 @@ function applyNow() {
         cache: false,
         url: '/Home/ApplyNow',
         data: new FormData()
-    }).done(function () {
+    }).done(function (data) {
+        alert(data)
+        var j = JSON.parse(data);
+        alert(j.result)
         $("[id^='Employer_']").val("")
         $("[id^='Employer_Gender']").prop("checked", false)
 
@@ -88,10 +111,11 @@ function addVariable() {
 
 
 function uploadFile(fileUpload) {
-    var formData = new FormData();
-    for (var i = 0; i < fileUpload.files.length; ++i) {
-        formData.append(fileUpload.files[i].name, fileUpload.files[i])
+    if (fileUpload.files.length < 1) {
+        return
     }
+    var formData = new FormData();
+    formData.append(fileUpload.files[0].name, fileUpload.files[0])
     $.ajax({
         method: 'post',
         contentType: false,
@@ -100,73 +124,49 @@ function uploadFile(fileUpload) {
         url: '/Home/UploadFile',
         data: formData
     }).done(function () {
-    });
+        var table = $('#Documents_FileTable')
+        var td = $(' \
+            <tr> \
+                <td style="width: 100%">' + fileUpload.files[0].name + '</td > \
+                <td class="documentFile_Delete text-center mx-1"><a href="#"><i class="fa fa-trash"></i></a></td> \
+                <td class="documentFile_Download text-center mx-1"><a href="#"><i class="fa fa-download"></i></a></td> \
+                <td class="documentFile_MoveUp text-center mx-1"><a href="#"><i class="fa fa-arrow-up"></i></a></td> \
+                <td class="documentFile_MoveDown text-center mx-1"><a href="#"><i class="fa fa-arrow-down"></i></a></td> \
+            </tr>')
+        table.append(td)
+        $('#Documents_FileUploadButton').val("")
+
+    })
 }
 
+$(document).on('click', '.documentFile_MoveUp', function (ev) {
+    var el = $(this).parent()
+    fileActions.append('MoveUp_' + fileActionsLength, el.index())
+    ++fileActionsLength
+    var prevEl = el.prev()
+    prevEl.insertAfter(el)
+    setSaveTimer()
+})
+
+$(document).on('click', '.documentFile_MoveDown', function (ev) {
+    var el = $(this).parent()
+    fileActions.append('MoveDown_' + fileActionsLength, el.index())
+    ++fileActionsLength
+    var nextEl = el.next()
+    nextEl.insertBefore(el)
+    setSaveTimer()
+})
+
+$(document).on('click', '.documentFile_Delete', function (ev) {
+    var el = $(this).parent()
+    fileActions.append('Delete_' + fileActionsLength, el.index())
+    ++fileActionsLength
+    setSaveTimer()
+    el.remove()
+})
 
 
+$(document).on('click', '.documentFile_Download', function (ev) {
+    var el = $(this).parent()
+})
 
-/* #####################################################################
-   #
-   #   Project       : Modal Login with jQuery Effects
-   #   Author        : Rodrigo Amarante (rodrigockamarante)
-   #   Version       : 1.0
-   #   Created       : 07/29/2015
-   #   Last Change   : 08/04/2015
-   #
-   ##################################################################### */
-
-$(function () {
-
-    var $formLogin = $('#login-form');
-    var $formLost = $('#lost-form');
-    var $formRegister = $('#register-form');
-    var $divForms = $('#div-forms');
-    var $modalAnimateTime = 300;
-    var $msgAnimateTime = 150;
-    var $msgShowTime = 2000;
-
-
-    $('#login_register_btn').click(function () { modalAnimate($formLogin, $formRegister) });
-    $('#register_login_btn').click(function () { modalAnimate($formRegister, $formLogin); });
-    $('#login_lost_btn').click(function () { modalAnimate($formLogin, $formLost); });
-    $('#lost_login_btn').click(function () { modalAnimate($formLost, $formLogin); });
-    $('#lost_register_btn').click(function () { modalAnimate($formLost, $formRegister); });
-    $('#register_lost_btn').click(function () { modalAnimate($formRegister, $formLost); });
-
-    var data = {
-        Email: 'Andrew',
-        Password: 'Lock'
-    }
-
-    function modalAnimate($oldForm, $newForm) {
-        var $oldH = $oldForm.height();
-        var $newH = $newForm.height();
-        $divForms.css("height", $oldH);
-        $oldForm.fadeToggle($modalAnimateTime, function () {
-            $divForms.animate({ height: $newH }, $modalAnimateTime, function () {
-                $newForm.fadeToggle($modalAnimateTime);
-            });
-        });
-    }
-
-    function msgFade($msgId, $msgText) {
-        $msgId.fadeOut($msgAnimateTime, function () {
-            $(this).text($msgText).fadeIn($msgAnimateTime);
-        });
-    }
-
-    function msgChange($divTag, $iconTag, $textTag, $divClass, $iconClass, $msgText) {
-        var $msgOld = $divTag.text();
-        msgFade($textTag, $msgText);
-        $divTag.addClass($divClass);
-        $iconTag.removeClass("glyphicon-chevron-right");
-        $iconTag.addClass($iconClass + " " + $divClass);
-        setTimeout(function () {
-            msgFade($textTag, $msgOld);
-            $divTag.removeClass($divClass);
-            $iconTag.addClass("glyphicon-chevron-right");
-            $iconTag.removeClass($iconClass + " " + $divClass);
-        }, $msgShowTime);
-    }
-});
