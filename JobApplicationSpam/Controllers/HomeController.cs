@@ -13,17 +13,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using JobApplicationSpam.CustomVariableParser;
 
 namespace JobApplicationSpam.Controllers
 {
-    class StringLengthComparer : IComparer<string>
-    {
-        public int Compare(string x, string y)
-        {
-            return x.Length.CompareTo(y.Length);
-        }
-    }
-
     [Authorize]
     public class HomeController : Controller
     {
@@ -177,7 +170,10 @@ namespace JobApplicationSpam.Controllers
                             outputDocument.AddPage(inputDocument.Pages[i]);
                         }
                     }
-                    outputDocument.Save(mergedPath);
+                    if (outputDocument.PageCount >= 1)
+                    {
+                        outputDocument.Save(mergedPath);
+                    }
                 }
 
                 var documentCopy = new Document { JobName = document.JobName, AppUser = appUser };
@@ -195,12 +191,17 @@ namespace JobApplicationSpam.Controllers
                     dbContext.Add(new DocumentFile(documentFile) { Document = documentCopy });
                 }
                 dbContext.SaveChanges();
+                var attachments = new List<EmailAttachment>();
+                if (pdfFilePaths.Count >= 1)
+                {
+                    attachments.Add(new EmailAttachment { Path = mergedPath, Name = ReplaceInString(Path.GetFileName(mergedPath), dict) });
+                }
                 HelperFunctions.SendEmail(
                     new EmailData
                     {
-                        Attachments = new List<EmailAttachment> { new EmailAttachment { Path = mergedPath, Name = Path.GetFileName(mergedPath) } },
-                        Body = documentEmail.Body,
-                        Subject = documentEmail.Subject,
+                        Attachments = attachments,
+                        Body = ReplaceInString(documentEmail.Body, dict),
+                        Subject = ReplaceInString(documentEmail.Subject, dict),
                         ToEmail = userValues.Email,
                         FromEmail = "info@bewerbungsspam.de",
                         FromName = "Bewerbungsspam"
@@ -232,10 +233,10 @@ namespace JobApplicationSpam.Controllers
             return appUser;
         }
 
-        private SortedDictionary<string, string> getVariableDict(Employer employer, UserValues userValues, DocumentEmail documentEmail, IEnumerable<CustomVariable> customVariables, string jobName)
+        private IDictionary<string, string> getVariableDict(Employer employer, UserValues userValues, DocumentEmail documentEmail, IEnumerable<CustomVariable> customVariables, string jobName)
         {
             var dict =
-                new SortedDictionary<string, string>(new StringLengthComparer())
+                new Dictionary<string, string>
                 {
                     ["$chefFirma"] = employer.Company,
                     ["$chefGeschlecht"] = employer.Gender,
@@ -252,12 +253,12 @@ namespace JobApplicationSpam.Controllers
                     ["$meinTitel"] = userValues.FirstName,
                     ["$meinVorname"] = userValues.FirstName,
                     ["$meinNachname"] = userValues.LastName,
-                    ["$meinStrasse"] = userValues.Street,
+                    ["$meineStrasse"] = userValues.Street,
                     ["$meinPostleitzahl"] = userValues.Postcode,
-                    ["$meinStadt"] = userValues.City,
-                    ["$meinEmail"] = userValues.FirstName,
-                    ["$meinTelefonnummer"] = userValues.Phone,
-                    ["$meinMobilnummer"] = userValues.MobilePhone,
+                    ["$meineStadt"] = userValues.City,
+                    ["$meineEmail"] = userValues.FirstName,
+                    ["$meineTelefonnummer"] = userValues.Phone,
+                    ["$meineMobilnummer"] = userValues.MobilePhone,
                     ["$beruf"] = jobName,
                     ["$emailBetreff"] = documentEmail.Subject,
                     ["$emailText"] = documentEmail.Body,
@@ -266,10 +267,11 @@ namespace JobApplicationSpam.Controllers
                     ["$monatHeute"] = DateTime.Today.Month.ToString("00"),
                     ["$jahrHeute"] = DateTime.Today.Year.ToString("0000"),
                 };
+            Variables.addVariablesToDict(customVariables.Select(x => x.Text), dict);
             return dict;
         }
 
-        public string ConvertToPdf(string path, SortedDictionary<string, string> dict)
+        public string ConvertToPdf(string path, IDictionary<string, string> dict)
         {
             var fileName = Path.GetFileName(path);
             var tmpPaths = new UnzipPaths();
@@ -308,25 +310,17 @@ namespace JobApplicationSpam.Controllers
             }
         }
 
-        [HttpPost]
-        public string ConvertToPdf()
+        private string ReplaceInString(string s, IDictionary<string, string> dict)
         {
-            var path = Request.Form["path"];
-            var fileName = Path.GetFileName(path);
-            var tmpPaths = new UnzipPaths();
-            var extension = Path.GetExtension(path);
-            switch(extension)
+            foreach(var kv in dict)
             {
-                case ".pdf":
-                    return path;
-                case ".odt":
-                    ZipFile.ExtractToDirectory(path, tmpPaths.UnzipTo);
-                    ReplaceInDirectory(tmpPaths.UnzipTo, new Dictionary<string, string> { ["$myFirstName"] = "Rene" });
-                    ZipFile.CreateFromDirectory(tmpPaths.UnzipTo, Path.Combine(tmpPaths.ZipTo, fileName));
-                    return tmpPaths.ZipTo;
-                default:
-                    throw new Exception($"Unknown file extension: {extension}");
+                if(kv.Value == "")
+                {
+                    s.Replace(kv.Key + " ", "");
+                }
+                s = s.Replace(kv.Key, kv.Value);
             }
+            return s;
         }
 
         private void ReplaceInDirectory(string path, IDictionary<string, string> dict)
@@ -341,10 +335,7 @@ namespace JobApplicationSpam.Controllers
                 if(Path.GetExtension(fullFilePath).ToLower() == ".xml")
                 {
                     var content = System.IO.File.ReadAllText(fullFilePath);
-                    foreach(var kv in dict)
-                    {
-                        content = content.Replace(kv.Key, kv.Value);
-                    }
+                    content = ReplaceInString(content, dict);
                     System.IO.File.WriteAllText(fullFilePath, content);
                 }
             }
@@ -537,6 +528,5 @@ namespace JobApplicationSpam.Controllers
                     throw new Exception($"Table not found: {table}");
             }
         }
-
     }
 }

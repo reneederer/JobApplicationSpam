@@ -27,7 +27,6 @@ function save(saveData) {
         for (var pair of fileActions.entries()) {
             str += "\n" + pair[0] + ": " + pair[1]
         }
-        alert(str)
         if (fileActionsLength > 0) {
             $.ajax({
                 method: 'post',
@@ -85,9 +84,7 @@ function applyNow() {
         url: '/Home/ApplyNow',
         data: new FormData()
     }).done(function (data) {
-        alert(data)
         var j = JSON.parse(data)
-        alert(j.result)
         $("[id^='Employer_']").val("")
         $("[id^='Employer_Gender']").prop("checked", false)
 
