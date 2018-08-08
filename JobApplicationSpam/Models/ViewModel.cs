@@ -60,10 +60,17 @@ namespace JobApplicationSpam.Models
         }
     }
 
-    public class ButtonField : VariableField
+    public class SelectField : Field
     {
-        public string Class = "";
+        public IEnumerable<string> OptionTexts { get; set; } = new List<string>();
+        public override string GetFieldType() => "_SelectField";
+    }
+
+    public class ButtonField : Field
+    {
+        public string Class { get; set; }
         public override string GetFieldType() => "_ButtonField";
+        public string LabelText { get; set; }
     }
 
     public class FileField : Field
@@ -72,18 +79,6 @@ namespace JobApplicationSpam.Models
         public int Size {get;set;} = 0;
         public string Path {get;set;} = "";
         public override string GetFieldType() => "_FileField";
-    }
-
-    public class FileUploadField : Field
-    {
-        public string Class { get; set; }
-        public override string GetFieldType() => "_FileUploadField";
-    }
-
-    public class SelectField : VariableField
-    {
-        public IEnumerable<string> Items { get; set; } = new List<string>();
-        public override string GetFieldType() => "_SelectField";
     }
 
     public class MenuItem

@@ -17,6 +17,9 @@ using JobApplicationSpam.CustomVariableParser;
 
 namespace JobApplicationSpam.Controllers
 {
+
+
+
     [Authorize]
     public class HomeController : Controller
     {

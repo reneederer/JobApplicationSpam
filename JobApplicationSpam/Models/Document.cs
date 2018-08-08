@@ -112,11 +112,6 @@ namespace JobApplicationSpam.Models
         public string Email { get; set; }
     }
 
-
-
-
-
-
     public class DocumentEmail
     {
         public DocumentEmail() { }

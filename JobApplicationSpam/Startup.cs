@@ -25,7 +25,9 @@ namespace JobApplicationSpam
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             services
                 .AddDbContext<JobApplicationSpamDbContext>(options =>
-                    options.UseNpgsql(Configuration["Data:JobApplicationSpam:ConnectionString"]))
+                    options
+                        .UseNpgsql(Configuration["Data:JobApplicationSpam:ConnectionString"])
+                )
                 .AddIdentity<AppUser, IdentityRole>(options =>
                     {
                         options.Password.RequiredLength = 1;

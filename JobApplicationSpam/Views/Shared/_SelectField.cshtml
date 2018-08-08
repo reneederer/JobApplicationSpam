@@ -1,0 +1,12 @@
+﻿@model JobApplicationSpam.Models.SelectField
+
+<div>
+    <b>Choose document</b>
+    <a href="#"><i class="fa fa-plus"></i></a>
+</div>
+<select id="@Model.Id" class="mb-2">
+    @foreach(var optionText in @Model.OptionTexts)
+    {
+        <option value="@optionText">@optionText</option>
+    }
+</select>

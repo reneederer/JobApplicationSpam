@@ -116,11 +116,20 @@
         Fields =
             new Field[]
             {
+                new SelectField
+                {
+                    Id = "Documents_ChooseDocument",
+                    OptionTexts =
+                        new List<string>
+                        {
+                            "Fachinformatiker für Anwendungsentwicklung"
+                        }
+
+                },
                 new DocumentFilesField
                 {
                     Files = fileFields
-                },
-                new FileUploadField { Id = "UploadFile", Class = "uploadFile" }
+                }
             }
     }
 )
