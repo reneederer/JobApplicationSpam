@@ -17,12 +17,25 @@ open System.Configuration
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Configuration
 open System.Transactions
+open System.IO
 
 
 type CustomWebApplicationFactory<'a> () =
     inherit WebApplicationFactory<JobApplicationSpam.Startup>()
+    let initializeDbForTests (dbContext : JobApplicationSpamDbContext) =
+        dbContext.Database.EnsureCreated() |> ignore
+        let userCount = dbContext.AppUsers.CountAsync() |> Async.AwaitTask |> Async.RunSynchronously
+        if userCount = 0
+        then
+            try
+                dbContext.AppUsers.AddRange(
+                    new AppUser(Id = "y", Email = "rene@web.de"),
+                    new AppUser(Id = "z", Email = "astrid@web.de")
+                )
+                dbContext.SaveChanges() |> ignore
+            with
+            | _ -> ()
     member val DbContext = null with get, set
-    member val Transaction = null with get, set
     override this.ConfigureWebHost(builder : IWebHostBuilder) =
         builder.ConfigureServices(fun services ->
             let serviceProvider =
@@ -30,8 +43,9 @@ type CustomWebApplicationFactory<'a> () =
                     .AddEntityFrameworkNpgsql()
                     .BuildServiceProvider()
             services.AddDbContext<JobApplicationSpamDbContext>(fun options ->
-                let config = ConfigurationBuilder().AddJsonFile("appsettings.json").Build()
-                let connectionString = config.["Data:JobApplicationSpam:ConnectionString"]
+                let appSettingsPath = "c:/users/rene/source/repos/JobApplicationSpam/JobApplicationSpam/appsettings.json"
+                let config = ConfigurationBuilder().AddJsonFile(appSettingsPath).Build()
+                let connectionString = config.["Data:JobApplicationSpam:ConnectionStringTest"]
                 options
                     .UseNpgsql(connectionString)
                     .UseInternalServiceProvider(serviceProvider)
@@ -43,20 +57,23 @@ type CustomWebApplicationFactory<'a> () =
             let scope = sp.CreateScope()
             let scopedServices = scope.ServiceProvider;
             let db = scopedServices.GetRequiredService<JobApplicationSpamDbContext>()
-            db.Database.EnsureCreated() |> ignore
+            use transactionScope = new TransactionScope(TransactionScopeOption.Suppress)
+            initializeDbForTests(db);
+            transactionScope.Complete()
             this.DbContext <- db
-            this.Transaction <- this.DbContext.Database.BeginTransaction()
-            // Ensure the database is created.
-            //Utilities.InitializeDbForTests(db);
         )
         |> ignore
+ 
+ [<AbstractClass>]
+ type SetupAndTeardown() =
+    member val TransactionScope = new TransactionScope() with get, set
     interface IDisposable with
         member this.Dispose() =
-            this.Transaction.Rollback()
-            this.Transaction.Dispose()
+            this.TransactionScope.Dispose()
             ()
 
-type IndexPageTests(factory : CustomWebApplicationFactory<JobApplicationSpam.Startup>) =
+type IndexPageTests(factory : CustomWebApplicationFactory<JobApplicationSpam.Startup>) as this =
+    inherit SetupAndTeardown()
     let client : HttpClient = factory.CreateClient(new WebApplicationFactoryClientOptions(AllowAutoRedirect = false))
     interface IClassFixture<CustomWebApplicationFactory<JobApplicationSpam.Startup>>
 
@@ -68,12 +85,10 @@ type IndexPageTests(factory : CustomWebApplicationFactory<JobApplicationSpam.Sta
         factory.DbContext.AppUsers.Add(appUser) |> ignore
         factory.DbContext.SaveChanges() |> ignore
         let ap = factory.DbContext.AppUsers.Find(appUser.Id)
-
-
         Assert.NotEqual(null, appUser)
-    
 
-type BasicTests (factory : CustomWebApplicationFactory<JobApplicationSpam.Startup>) =
+type BasicTests (factory : CustomWebApplicationFactory<JobApplicationSpam.Startup>) as this =
+    inherit SetupAndTeardown()
     let client : HttpClient = factory.CreateClient(new WebApplicationFactoryClientOptions(AllowAutoRedirect = false))
     interface IClassFixture<CustomWebApplicationFactory<JobApplicationSpam.Startup>>
     [<Theory>]
