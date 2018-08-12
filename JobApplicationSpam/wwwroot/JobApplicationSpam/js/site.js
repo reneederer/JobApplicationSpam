@@ -108,28 +108,62 @@ function uploadFile(fileUpload) {
         return
     }
     var formData = new FormData()
-    formData.append(fileUpload.files[0].name, fileUpload.files[0])
+    formData.append("files", fileUpload.files[0])
+    var table = $('#Documents_FileTable')
+    var td = $(' \
+        <tr> \
+            <td style="width: 100%" colspan="5"> \
+                <div style="position:relative;width:296px;background:#0000f0" > <div id="progress" style="background: blue; height: 20px;width:0"></div></div> \
+            </td> \
+        </tr>')
+    table.append(td)
+    var progressEle = table.find('tr:last').find('td > div').first()
+    $('#Documents_FileUploadButton').val("")
+
     $.ajax({
         method: 'post',
         contentType: false,
         processData: false,
         cache: false,
         url: '/Home/UploadFile',
-        data: formData
-    }).done(function () {
-        var table = $('#Documents_FileTable')
-        var td = $(' \
-            <tr> \
-                <td style="width: 100%">' + fileUpload.files[0].name + '</td > \
+        data: formData,
+        xhr: function() {
+            var xhr = new window.XMLHttpRequest();
+            xhr.upload.addEventListener("progress", function (evt) {
+                if (evt.lengthComputable) {
+                    var progress = Math.round((evt.loaded / evt.total) * 100);
+                    progressEle.width(progress + "%");
+                }
+            }, false);
+            return xhr;
+        },
+        success: function (data) {
+            if (data.state == 0) { //Upload succeeded
+                progressEle.parent().replaceWith('\
+                <td style="width: 100%"> \
+                    ' + data.message + ' \
+                </td> \
                 <td class="documentFile_Delete text-center mx-1"><a href="#"><i class="fa fa-trash"></i></a></td> \
                 <td class="documentFile_Download text-center mx-1"><a href="#"><i class="fa fa-download"></i></a></td> \
                 <td class="documentFile_MoveUp text-center mx-1"><a href="#"><i class="fa fa-arrow-up"></i></a></td> \
                 <td class="documentFile_MoveDown text-center mx-1"><a href="#"><i class="fa fa-arrow-down"></i></a></td> \
-            </tr>')
-        table.append(td)
-        $('#Documents_FileUploadButton').val("")
+                ')
+            }
+            else if (data.state == 1) { //Upload failed
+               progressEle.replaceWith('<div style="color: red">Sorry, the upload failed<a class="float-right" onClick="removeRow(this)"><i class="fa fa-window-close"></i></a></div>')
+            }
+        },
+        error: function (data) {
+            progressEle.replaceWith('<div style="color: red">Sorry, the upload failed<a href="#" onClick="removeRow(this)"><i class="fa fa-close"></i></a></div>')
+        }
 
     })
+}
+
+function removeRow(el) {
+    var jEl = $(el)
+    jEl.parents("tr:first").remove()
+
 }
 
 $(document).on('click', '.documentFile_MoveUp', function (ev) {

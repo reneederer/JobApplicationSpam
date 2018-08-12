@@ -7,17 +7,15 @@ using System.IO;
 using System.Linq;
 using System.IO.Compression;
 using PdfSharp.Pdf;
-using PdfSharp;
 using PdfSharp.Pdf.IO;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using JobApplicationSpam.CustomVariableParser;
+using Microsoft.AspNetCore.Http;
 
 namespace JobApplicationSpam.Controllers
 {
-
 
 
     [Authorize]
@@ -47,32 +45,25 @@ namespace JobApplicationSpam.Controllers
                 {
                 }
             }
-            return RedirectToAction("J", "Home");
-        }
-
-        [AllowAnonymous]
-        public async Task<IActionResult> J()
-        {
             var appUser = await GetOrCreateAppUser();
-            var document = GetDocument(appUser, "documentName");
-            return View("JobApplicationSpam", GetJobApplicationSpamState(appUser));
+            return View("JobApplicationSpam", dbContext.GetJobApplicationSpamState(appUser));
         }
 
         [HttpPost]
         public async Task Save()
         {
-            var appUser = await GetOrCreateAppUser();
-            var document = GetDocument(appUser, "documentName");
+            var appUser = await userManager.GetUserAsync(HttpContext.User);
             foreach (var kv in Request.Form)
             {
-
                 var split = kv.Key.Split(new char[] { '_' });
                 var table = split[0];
                 var column = split[1];
-                object index = split.Length > 2 ? (object)Int32.Parse(split[2]) : null;
-                var dbObject = GetDbObject(table, appUser, document, index);
-                dbObject.GetType().GetProperty(column).SetValue(dbObject, kv.Value.ToString());
-                dbContext.Update(dbObject);
+                int index = -1;
+                if (split.Length > 2)
+                {
+                    Int32.TryParse(split[2], out index);
+                }
+                dbContext.UpdateDbObject(appUser, "documentName", table, column, index, kv.Value.ToString());
             }
             dbContext.SaveChanges();
         }
@@ -80,9 +71,9 @@ namespace JobApplicationSpam.Controllers
         [HttpPost]
         public async Task PerformFileActions()
         {
-            var appUser = await GetOrCreateAppUser();
-            var document = GetDocument(appUser, "documentName");
-            var documentFiles = ((IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document)).OrderBy(x => x.Id).AsEnumerable();
+            var appUser = await userManager.GetUserAsync(HttpContext.User);
+            var document = dbContext.GetDocument(appUser, "documentName");
+            var documentFiles = ((IEnumerable<DocumentFile>)dbContext.GetDbObject("DocumentFiles", appUser, document)).OrderBy(x => x.Id).AsEnumerable();
             Action<IEnumerable<DocumentFile>, int, int> swap =
                 (files, index1, index2) =>
                 {
@@ -138,13 +129,13 @@ namespace JobApplicationSpam.Controllers
         {
             try
             {
-                var appUser = await GetOrCreateAppUser();
-                var document = GetDocument(appUser, "documentName");
-                var documentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document);
-                var employer = (Employer)GetDbObject("Employer", appUser, document);
-                var userValues = (UserValues)GetDbObject("UserValues", appUser, document);
-                var customVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document);
-                var documentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document);
+                var appUser = await userManager.GetUserAsync(HttpContext.User);
+                var document = dbContext.GetDocument(appUser, "documentName");
+                var documentEmail = (DocumentEmail)dbContext.GetDbObject("DocumentEmail", appUser, document);
+                var employer = (Employer)dbContext.GetDbObject("Employer", appUser, document);
+                var userValues = (UserValues)dbContext.GetDbObject("UserValues", appUser, document);
+                var customVariables = (IEnumerable<CustomVariable>)dbContext.GetDbObject("CustomVariables", appUser, document);
+                var documentFiles = (IEnumerable<DocumentFile>)dbContext.GetDbObject("DocumentFiles", appUser, document);
                 var sentApplication =
                     new SentApplication
                     {
@@ -345,191 +336,30 @@ namespace JobApplicationSpam.Controllers
         }
 
         [HttpPost]
-        public async Task UploadFile()
+        public async Task<JsonResult> UploadFile(IList<IFormFile> files)
         {
-            var appUser = await GetOrCreateAppUser();
-            var document = GetDocument(appUser, "documentName");
-            var files = Request.Form.Files;
-            foreach(var file in Request.Form.Files)
+            if(!files.Any())
             {
-                var userPaths = new UserPaths(file.FileName, appUser.Id);
-                var savePath = Path.Combine(userPaths.UserDirectory, file.FileName);
-                using (var fileStream = System.IO.File.Create(savePath))
-                {
-                    file.OpenReadStream().CopyTo(fileStream);
-                }
-                var documentFile = new DocumentFile { Document = document, Index = -1, Name = file.FileName, Path = savePath, SizeInBytes = -1 };
-                dbContext.Add(documentFile);
+                return Json(new { state = 0, message = "" });
             }
+            var appUser = await userManager.GetUserAsync(HttpContext.User);
+            var document = dbContext.GetDocument(appUser, "documentName");
+            var file = files.ElementAt(0);
+            if (file.FileName.EndsWith(".3gp"))
+            {
+                return Json(new { state = 1, message = "Sorry, the upload failed" });
+            }
+            var userPaths = new UserPaths(file.FileName, appUser.Id);
+            var savePath = Path.Combine(userPaths.UserDirectory, file.FileName);
+            using (var fileStream = System.IO.File.Create(savePath))
+            {
+                file.OpenReadStream().CopyTo(fileStream);
+            }
+            var documentFile = new DocumentFile { Document = document, Index = -1, Name = file.FileName, Path = savePath, SizeInBytes = -1 };
+            dbContext.Add(documentFile);
             dbContext.SaveChanges();
+            return Json(new { state = 0, message = file.FileName });
         }
 
-        private JobApplicationSpamState GetJobApplicationSpamState(AppUser appUser)
-        {
-            var document = GetDocument(appUser, "someDocumentName");
-            return
-                new JobApplicationSpamState
-                {
-                    Document = document,
-                    UserValues = (UserValues)GetDbObject("UserValues", appUser, document),
-                    Employer = (Employer)GetDbObject("Employer", appUser, document),
-                    DocumentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document),
-                    CustomVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document),
-                    DocumentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document),
-                    User = appUser
-                };
-        }
-
-        private Document GetDocument(AppUser appUser, string documentName)
-        {
-            var document =
-                dbContext.Documents
-                    .Where(x => x.AppUser.Id == appUser.Id)
-                    .OrderByDescending(x => x.Id).FirstOrDefault();
-            if (document == null)
-            {
-                document = new Document { AppUser = appUser };
-                dbContext.Add(document);
-                var customVariables =
-                    new List<CustomVariable>()
-                    {
-                        new CustomVariable
-                        {
-                            Text = "$chefAnrede =\n\tmatch $chefGeschlecht with\n\t| \"m\" -> \"Herr\"\n\t| \"f\" -> \"Frau\"\n\t| \"u\" -> \"\"",
-                            Document = document
-                        },
-                        new CustomVariable
-                        {
-                            Text = "$anredeZeile =\n\tmatch $chefGeschlecht with\n\t| \"m\" -> \"Sehr geehrter Herr $chefTitel $chefNachname,\n\t| \"f\" -> \"Sehr geehrte Frau $chefTitel $chefNachname,\"\n\t| \"u\" -> \"Sehr geehrte Damen und Herren,\"",
-                            Document = document
-                        },
-                        new CustomVariable
-                        {
-                            Text = "$chefAnredeBriefkopf =\n\tmatch $chefGeschlecht with\n\t| \"m\" -> \"Herrn\"\n\t| \"f\" -> \"Frau\"\n\t| \"u\" -> \"\"",
-                            Document = document
-                        },
-                        new CustomVariable
-                        {
-                            Text = "$datumHeute = $tagHeute + \".\" + $monatHeute + \".\" + $jahrHeute",
-                            Document = document
-                        }
-                    };
-                dbContext.AddRange(customVariables);
-                dbContext.SaveChanges();
-            }
-            return document;
-        }
-
-        private object GetDbObject(string table, AppUser appUser, Document document, object index = null)
-        {
-            switch(table)
-            {
-                case "UserValues":
-                    {
-                        var userValues =
-                            dbContext.UserValues
-                                .Where(x => x.AppUser.Id == appUser.Id)
-                                .OrderByDescending(x => x.Id).FirstOrDefault();
-                        if (userValues == null)
-                        {
-                            userValues = new UserValues { AppUser = appUser };
-                            dbContext.Add(userValues);
-                            dbContext.SaveChanges();
-                        }
-                        return userValues;
-                    }
-                case "DocumentEmail":
-                    {
-                        var documentEmail =
-                            dbContext.DocumentEmail
-                                .Where(x => x.Document.Id == document.Id)
-                                .OrderByDescending(x => x.Id)
-                                .FirstOrDefault();
-                        if(documentEmail == null)
-                        {
-                            documentEmail = new DocumentEmail { Document = document };
-                            dbContext.Add(documentEmail);
-                            dbContext.SaveChanges();
-                        }
-                        return documentEmail;
-                    }
-                case "Employer":
-                    {
-                        var employer =
-                            dbContext.Employers
-                                .Where(x => x.AppUser.Id == appUser.Id)
-                                .OrderByDescending(x => x.Id)
-                                .FirstOrDefault();
-                        if(employer == null)
-                        {
-                            employer = new Employer { AppUser = appUser };
-                            dbContext.Add(employer);
-                            dbContext.SaveChanges();
-                        }
-                        return employer;
-                    }
-                case "CustomVariables":
-                    {
-                        if (index != null)
-                        {
-                            var customVariable =
-                                dbContext.CustomVariables
-                                    .Where(x => x.Document.Id == document.Id)
-                                    .OrderBy(x => x.Id)
-                                    .Skip((int)index - 1)
-                                    .Take(1)
-                                    .FirstOrDefault();
-                            if (customVariable == null)
-                            {
-                                customVariable = new CustomVariable { Document = document };
-                                dbContext.Add(customVariable);
-                                dbContext.SaveChanges();
-                            }
-                            return customVariable;
-                        }
-                        else
-                        {
-                            var customVariables =
-                                dbContext.CustomVariables
-                                    .Where(x => x.Document.Id == document.Id)
-                                    .OrderBy(x => x.Id);
-                            return customVariables;
-                        }
-                    }
-                case "DocumentFiles":
-                    {
-                        if (index != null)
-                        {
-                            var documentFile =
-                                dbContext.DocumentFiles
-                                    .Where(x => x.Document.Id == document.Id)
-                                    .OrderBy(x => x.Id)
-                                    .Skip((int)index - 1)
-                                    .Take(1)
-                                    .FirstOrDefault();
-                            if (documentFile == null)
-                            {
-                                documentFile = new DocumentFile { Document = document };
-                                dbContext.Add(documentFile);
-                                dbContext.SaveChanges();
-                            }
-                            return documentFile;
-                        }
-                        else
-                        {
-                            var documentFiles =
-                                dbContext.DocumentFiles
-                                    .Where(x => x.Document.Id == document.Id)
-                                    .OrderBy(x => x.Id);
-                            return documentFiles.AsEnumerable<DocumentFile>();
-                        }
-                    }
-                case "Document":
-                    return document;
-
-                default:
-                    throw new Exception($"Table not found: {table}");
-            }
-        }
     }
 }
