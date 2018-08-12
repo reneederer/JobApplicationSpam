@@ -104,6 +104,7 @@ function addVariable() {
 
 
 function uploadFile(fileUpload) {
+//TODO disable upload button while files are being uploaded
     if (fileUpload.files.length < 1) {
         return
     }
@@ -138,7 +139,7 @@ function uploadFile(fileUpload) {
             return xhr;
         },
         success: function (data) {
-            if (data.state == 0) { //Upload succeeded
+            if (data.state === 0) { //Upload succeeded
                 progressEle.parent().replaceWith('\
                 <td style="width: 100%"> \
                     ' + data.message + ' \
@@ -149,8 +150,8 @@ function uploadFile(fileUpload) {
                 <td class="documentFile_MoveDown text-center mx-1"><a href="#"><i class="fa fa-arrow-down"></i></a></td> \
                 ')
             }
-            else if (data.state == 1) { //Upload failed
-               progressEle.replaceWith('<div style="color: red">Sorry, the upload failed<a class="float-right" onClick="removeRow(this)"><i class="fa fa-window-close"></i></a></div>')
+            else if (data.state === 1) { //Upload failed
+               progressEle.replaceWith('<div style="color: red">' + data.message + '<a class="float-right" onClick="removeRow(this)"><i class="fa fa-window-close"></i></a></div>')
             }
         },
         error: function (data) {

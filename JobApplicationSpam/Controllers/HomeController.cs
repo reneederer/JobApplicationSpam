@@ -150,25 +150,15 @@ namespace JobApplicationSpam.Controllers
                 var dict = getVariableDict(employer, userValues, documentEmail, customVariables, document.JobName);
                 foreach (var documentFile in documentFiles)
                 {
-                    pdfFilePaths.Add(ConvertToPdf(documentFile.Path, dict));
+                    var tmpPath = new TmpPath().Path;
+                    if (FileConverter.ConvertTo(".pdf", documentFile.Path, tmpPath))
+                    {
+                        pdfFilePaths.Add(tmpPath);
+                    }
+                    else throw new Exception("Failed to convert file " + documentFile.Name);
                 }
 
                 var mergedPath = Path.Combine(new TmpPath().Path, "mypdf.pdf");
-                using (var outputDocument = new PdfDocument())
-                {
-                    foreach (var pdfFilePath in pdfFilePaths)
-                    {
-                        var inputDocument = PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import);
-                        for (int i = 0; i < inputDocument.Pages.Count; ++i)
-                        {
-                            outputDocument.AddPage(inputDocument.Pages[i]);
-                        }
-                    }
-                    if (outputDocument.PageCount >= 1)
-                    {
-                        outputDocument.Save(mergedPath);
-                    }
-                }
 
                 var documentCopy = new Document { JobName = document.JobName, AppUser = appUser };
                 dbContext.Add(documentCopy);
@@ -265,45 +255,6 @@ namespace JobApplicationSpam.Controllers
             return dict;
         }
 
-        public string ConvertToPdf(string path, IDictionary<string, string> dict)
-        {
-            var fileName = Path.GetFileName(path);
-            var tmpPaths = new UnzipPaths();
-            var extension = Path.GetExtension(path);
-            switch(extension)
-            {
-                case ".pdf":
-                    return path;
-                case ".odt":
-                    ZipFile.ExtractToDirectory(path, tmpPaths.UnzipTo);
-                    ReplaceInDirectory(tmpPaths.UnzipTo, dict);
-                    ZipFile.CreateFromDirectory(tmpPaths.UnzipTo, Path.Combine(tmpPaths.ZipTo, fileName));
-
-                    var pdfOutputPath = Path.ChangeExtension(path, ".pdf");
-                    System.IO.File.Delete(pdfOutputPath);
-                    using (var process1 = new System.Diagnostics.Process())
-                    {
-                        process1.StartInfo.FileName = "C:/Program Files/LibreOffice 5/program/python.exe";
-                        process1.StartInfo.UseShellExecute = false;
-                        process1.StartInfo.Arguments =
-                        String.Format(@" ""{0}"" --format pdf --output=""{1}"" ""{2}"" ", "c:/Program Files/unoconv/unoconv", pdfOutputPath, path);
-                        process1.StartInfo.CreateNoWindow = true;
-                        process1.Start();
-                        process1.WaitForExit();
-                    }
-                    if (System.IO.File.Exists(pdfOutputPath))
-                    {
-                        return pdfOutputPath;
-                    }
-                    else
-                    {
-                        throw new Exception("File was not converted");
-                    }
-                default:
-                    throw new Exception($"Unknown file extension: {extension}");
-            }
-        }
-
         private string ReplaceInString(string s, IDictionary<string, string> dict)
         {
             foreach(var kv in dict)
@@ -317,49 +268,71 @@ namespace JobApplicationSpam.Controllers
             return s;
         }
 
-        private void ReplaceInDirectory(string path, IDictionary<string, string> dict)
-        {
-            foreach(var currentDir in Directory.EnumerateDirectories(path))
-            {
-                ReplaceInDirectory(Path.Combine(path, currentDir), dict);
-            }
-            foreach(var currentFile in Directory.EnumerateFiles(path))
-            {
-                var fullFilePath = Path.Combine(path, currentFile);
-                if(Path.GetExtension(fullFilePath).ToLower() == ".xml")
-                {
-                    var content = System.IO.File.ReadAllText(fullFilePath);
-                    content = ReplaceInString(content, dict);
-                    System.IO.File.WriteAllText(fullFilePath, content);
-                }
-            }
-        }
-
         [HttpPost]
         public async Task<JsonResult> UploadFile(IList<IFormFile> files)
         {
-            if(!files.Any())
+            try
             {
-                return Json(new { state = 0, message = "" });
-            }
-            var appUser = await userManager.GetUserAsync(HttpContext.User);
-            var document = dbContext.GetDocument(appUser, "documentName");
-            var file = files.ElementAt(0);
-            if (file.FileName.EndsWith(".3gp"))
-            {
-                return Json(new { state = 1, message = "Sorry, the upload failed" });
-            }
-            var userPaths = new UserPaths(file.FileName, appUser.Id);
-            var savePath = Path.Combine(userPaths.UserDirectory, file.FileName);
-            using (var fileStream = System.IO.File.Create(savePath))
-            {
-                file.OpenReadStream().CopyTo(fileStream);
-            }
-            var documentFile = new DocumentFile { Document = document, Index = -1, Name = file.FileName, Path = savePath, SizeInBytes = -1 };
-            dbContext.Add(documentFile);
-            dbContext.SaveChanges();
-            return Json(new { state = 0, message = file.FileName });
-        }
+                if (!files.Any())
+                {
+                    return Json(new { state = 0, message = "There were no files to upload." });
+                }
+                var appUser = await userManager.GetUserAsync(HttpContext.User);
+                var document = dbContext.GetDocument(appUser, "documentName");
+                var file = files.ElementAt(0);
 
+                if (file.Length > FileConverter.GetMaxUploadSizeInBytes())
+                {
+                    return Json(new { state = 1, message = "Sorry, the maximum file size is " + FileConverter.GetMaxUploadSizeAsString() + "." });
+                }
+
+                if (!FileConverter.IsUploadFileTypeValid(Path.GetExtension(file.FileName)))
+                {
+                    return Json(new { state = 1, message = "Sorry, only pdf, odt, doc and docx files can be upload." });
+                }
+                var userPath = new UserPath(appUser.Id);
+                var savePath = Path.Combine(userPath.UserDirectory, file.FileName);
+
+                using (var originalFileStream = file.OpenReadStream())
+                {
+                    using (var saveFileStream = System.IO.File.Create(savePath))
+                    {
+                        originalFileStream.CopyTo(saveFileStream);
+                    }
+                }
+
+                var dbFileNames =
+                    dbContext.DocumentFiles
+                        .Where(x => x.Document.Name == "documentName" || true)
+                        .Select(x => x.Name);
+                var diskFileNames =
+                    System.IO.Directory.EnumerateFiles(new UserPath(appUser.Id).UserDirectory)
+                        .Select(x => Path.GetFileName(x));
+
+                var uploadedFileData = FileConverter.GetUploadedFileData(appUser.Id, savePath, dbFileNames, diskFileNames);
+                if (uploadedFileData.ConvertAndSave())
+                {
+                    dbContext.Add(
+                        new DocumentFile
+                        { Document = document,
+                            Index = -1,
+                            Name = uploadedFileData.DisplayedFileName,
+                            Path = uploadedFileData.SavedFileName,
+                            SizeInBytes = -1 }
+                    );
+                    dbContext.SaveChanges();
+                    return Json(new { state = 0, message = uploadedFileData.DisplayedFileName });
+                }
+                else
+                {
+                    return Json(new { state = 1, message = "Sorry, the upload failed." });
+                }
+            }
+            catch(Exception err)
+            {
+                log.Error("", err);
+                return Json(new { state = 1, message = "Sorry, an error occurred." });
+            }
+        }
     }
 }

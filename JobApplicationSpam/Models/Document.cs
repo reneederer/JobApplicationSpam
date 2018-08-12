@@ -33,14 +33,21 @@ namespace JobApplicationSpam.Models
         }
     }
 
-    public class UserPaths
+    public class UploadedFileData
     {
-        public string SaveTmp { get; set; }
+        public string OriginalFilePath { get; set; }
+        public string SavedFileName { get; set; }
+        public string DisplayedFileName { get; set; }
+
+        public Func<bool> ConvertAndSave { get; set; }
+    }
+
+    public class UserPath
+    {
         public string UserDirectory { get; set; }
-        public UserPaths(string path, string userId)
+        public UserPath(string userId)
         {
             UserDirectory = $"c:/users/rene/JobApplicationSpam/data/{userId}/";
-            SaveTmp = $"c:/users/rene/JobApplicationSpam/tmp/{Guid.NewGuid().ToString()}/";
             Directory.CreateDirectory(UserDirectory);
         }
     }
@@ -227,6 +234,7 @@ namespace JobApplicationSpam.Models
         public AppUser AppUser { get; set; }
         [ForeignKey ("EmployerId")]
         public string JobName { get; set; }
+        public string Name { get; set; }
     }
 
     public enum SentApplicationStatus
