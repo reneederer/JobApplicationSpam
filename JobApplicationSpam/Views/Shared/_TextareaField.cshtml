@@ -2,5 +2,6 @@
 
 <div class="form-group">
     <label for="@Model.Id"><b>@Model.LabelText</b></label>
-    <textarea id="@Model.Id" name="@Model.Id" class="form-control field" style="min-height: @Model.Height; overflow: auto">@Model.Value</textarea>
+    <div class="float-right d-inline">@(string.IsNullOrEmpty(Model.VariableName) ? "" : Model.VariableName)</div>
+    <textarea id="@Model.Id" maxlength="@Model.MaxLength" name="@Model.Id" class="form-control inputField" style="min-height: @Model.Height; overflow: auto">@Model.Value</textarea>
 </div>

@@ -9,9 +9,9 @@ namespace JobApplicationSpam.Models
         public DocumentEmail DocumentEmail { get; set; }
         public IEnumerable<CustomVariable> CustomVariables { get; set; } = new List<CustomVariable>();
         public IEnumerable<DocumentFile> DocumentFiles { get; set; } = new List<DocumentFile>();
+        public IEnumerable<SentApplication> SentApplications { get; set; } = new List<SentApplication>();
         public UserValues UserValues { get; set; }
-        public Employer Employer { get; set; }
-        public AppUser User;
+        public AppUser User { get; set; }
     }
 
     public abstract class Field
@@ -26,19 +26,21 @@ namespace JobApplicationSpam.Models
 
     public abstract class VariableField : Field
     {
-        public string OdtVariable { get; set; } = "";
+        public string VariableName { get; set; } = "";
         public string LabelText { get; set; } = "";
         public string Value { get; set; } = "";
     }
 
     public class TextareaField : VariableField
     {
-        public string Height {get;set;} = "";
+        public int MaxLength { get; set; } = 5000;
+        public string Height { get; set; } = "400px";
         public override string GetFieldType() => "_TextAreaField";
     }
 
     public class InputField : VariableField
-    {       
+    {
+        public int MaxLength { get; set; } = 80;
         public override string GetFieldType() => "_InputField";
     }
 

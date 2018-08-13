@@ -86,15 +86,11 @@ namespace JobApplicationSpam.Controllers
                     var file2 = files.ElementAt(index2);
                     var file1Copy = new DocumentFile(file1);
 
-                    file1.Index = file2.Index;
                     file1.Name = file2.Name;
                     file1.Path = file2.Path;
-                    file1.SizeInBytes = file2.SizeInBytes;
 
-                    file2.Index = file1Copy.Index;
                     file2.Name = file1Copy.Name;
                     file2.Path = file1Copy.Path;
-                    file2.SizeInBytes = file1Copy.SizeInBytes;
                 };
             foreach(var kv in Request.Form)
             {
@@ -125,14 +121,13 @@ namespace JobApplicationSpam.Controllers
         }
 
         [HttpPost]
-        public async Task<string> ApplyNow()
+        public async Task<JsonResult> ApplyNow()
         {
             try
             {
                 var appUser = await userManager.GetUserAsync(HttpContext.User);
                 var document = dbContext.GetDocument(appUser, "documentName");
                 var documentEmail = (DocumentEmail)dbContext.GetDbObject("DocumentEmail", appUser, document);
-                var employer = (Employer)dbContext.GetDbObject("Employer", appUser, document);
                 var userValues = (UserValues)dbContext.GetDbObject("UserValues", appUser, document);
                 var customVariables = (IEnumerable<CustomVariable>)dbContext.GetDbObject("CustomVariables", appUser, document);
                 var documentFiles = (IEnumerable<DocumentFile>)dbContext.GetDbObject("DocumentFiles", appUser, document);
@@ -140,29 +135,44 @@ namespace JobApplicationSpam.Controllers
                     new SentApplication
                     {
                         Document = document,
-                        Employer = employer,
                         UserValues = userValues,
                         SentDate = DateTime.Now
                     };
                 dbContext.Add(sentApplication);
 
                 var pdfFilePaths = new List<string>();
-                var dict = getVariableDict(employer, userValues, documentEmail, customVariables, document.JobName);
+                var dict = getVariableDict(document.Employer, userValues, documentEmail, customVariables, document.JobName);
+                var tmpDirectory = new TmpPath().Path;
+                var userDirectory = new UserPath(appUser.Id).UserDirectory;
                 foreach (var documentFile in documentFiles)
                 {
-                    var tmpPath = new TmpPath().Path;
-                    if (FileConverter.ConvertTo(".pdf", documentFile.Path, tmpPath))
+                    var currentFile = Path.Combine(userDirectory, documentFile.Path);
+                    var extension = Path.GetExtension(currentFile).ToLower();
+                    var convertedToPdfPath = Path.Combine(tmpDirectory, $"{Path.GetFileNameWithoutExtension(documentFile.Path)}_{Guid.NewGuid().ToString()}.pdf");
+                    if(extension == ".odt")
                     {
-                        pdfFilePaths.Add(tmpPath);
+                        var tmpPath2 = Path.Combine(tmpDirectory, $"{Path.GetFileNameWithoutExtension(documentFile.Path)}_replaced_{Guid.NewGuid().ToString()}{extension}");
+
+                        FileConverter.ReplaceInOdt(currentFile, tmpPath2, dict);
+                        currentFile = tmpPath2;
+                    }
+                    if (FileConverter.ConvertTo(currentFile, convertedToPdfPath))
+                    {
+                        pdfFilePaths.Add(convertedToPdfPath);
                     }
                     else throw new Exception("Failed to convert file " + documentFile.Name);
                 }
 
-                var mergedPath = Path.Combine(new TmpPath().Path, "mypdf.pdf");
+                var mergedPath = Path.Combine(new TmpPath().Path, "merged_" + Guid.NewGuid().ToString() + ".pdf");
+                if(!FileConverter.MergePdfs(pdfFilePaths, mergedPath))
+                {
+                    throw new Exception("Failed to merge pdfs.");
+                }
 
-                var documentCopy = new Document { JobName = document.JobName, AppUser = appUser };
+                var newEmployer = new Employer();
+                dbContext.Add(newEmployer);
+                var documentCopy = new Document(document) { Employer = newEmployer };
                 dbContext.Add(documentCopy);
-                dbContext.Add(new Employer() { AppUser = appUser });
                 dbContext.Add(new UserValues(userValues) { AppUser = appUser });
                 dbContext.Add(new DocumentEmail(documentEmail) { Document = documentCopy });
 
@@ -174,11 +184,18 @@ namespace JobApplicationSpam.Controllers
                 {
                     dbContext.Add(new DocumentFile(documentFile) { Document = documentCopy });
                 }
-                dbContext.SaveChanges();
                 var attachments = new List<EmailAttachment>();
                 if (pdfFilePaths.Count >= 1)
                 {
-                    attachments.Add(new EmailAttachment { Path = mergedPath, Name = ReplaceInString(Path.GetFileName(mergedPath), dict) });
+                    var attachmentName = FileConverter.ReplaceInString(documentEmail.AttachmentName, dict);
+                    attachmentName =
+                        ((attachmentName.Length >= 4 &&
+                            attachmentName.EndsWith(".pdf", StringComparison.CurrentCultureIgnoreCase)
+                        || attachmentName.Length >= 1 && !attachmentName.EndsWith(".pdf", StringComparison.CurrentCultureIgnoreCase))
+                        )
+                        ? attachmentName
+                        : "Bewerbung.pdf";
+                    attachments.Add(new EmailAttachment { Path = mergedPath, Name = attachmentName });
                 }
                 HelperFunctions.SendEmail(
                     new EmailData
@@ -186,17 +203,20 @@ namespace JobApplicationSpam.Controllers
                         Attachments = attachments,
                         Body = ReplaceInString(documentEmail.Body, dict),
                         Subject = ReplaceInString(documentEmail.Subject, dict),
-                        ToEmail = userValues.Email,
-                        FromEmail = "info@bewerbungsspam.de",
-                        FromName = "Bewerbungsspam"
+                        ToEmail = document.Employer.Email,
+                        FromEmail = userValues.Email,
+                        FromName =
+                            (userValues.Degree == "" ? "" : userValues.Degree + " ") + 
+                            userValues.FirstName + " " + userValues.LastName
                     }
                 );
-                return @"{ ""result"": ""succeeded"" }";
+                dbContext.SaveChanges();
+                return Json(new { status = 0 });
             }
             catch(Exception err)
             {
                 log.Error("", err);
-                return @"{ ""result"": ""failed"" }";
+                return Json(new { status = 1 });
             }
         }
 
@@ -222,31 +242,31 @@ namespace JobApplicationSpam.Controllers
             var dict =
                 new Dictionary<string, string>
                 {
-                    ["$chefFirma"] = employer.Company,
-                    ["$chefGeschlecht"] = employer.Gender,
-                    ["$chefTitel"] = employer.FirstName,
-                    ["$chefVorname"] = employer.FirstName,
-                    ["$chefNachname"] = employer.LastName,
-                    ["$chefStrasse"] = employer.Street,
-                    ["$chefPostleitzahl"] = employer.Postcode,
-                    ["$chefStadt"] = employer.City,
-                    ["$chefEmail"] = employer.Email,
-                    ["$chefTelefonnummer"] = employer.Phone,
-                    ["$chefMobilnummer"] = employer.MobilePhone,
-                    ["$meinGeschlecht"] = userValues.Gender,
-                    ["$meinTitel"] = userValues.FirstName,
-                    ["$meinVorname"] = userValues.FirstName,
-                    ["$meinNachname"] = userValues.LastName,
-                    ["$meineStrasse"] = userValues.Street,
-                    ["$meinPostleitzahl"] = userValues.Postcode,
-                    ["$meineStadt"] = userValues.City,
-                    ["$meineEmail"] = userValues.FirstName,
-                    ["$meineTelefonnummer"] = userValues.Phone,
-                    ["$meineMobilnummer"] = userValues.MobilePhone,
-                    ["$beruf"] = jobName,
-                    ["$emailBetreff"] = documentEmail.Subject,
-                    ["$emailText"] = documentEmail.Body,
-                    ["$emailAnhang"] = documentEmail.AttachmentName,
+                    ["$chefFirma"] = employer.Company ?? "",
+                    ["$chefGeschlecht"] = employer.Gender ?? "",
+                    ["$chefTitel"] = employer.FirstName ?? "",
+                    ["$chefVorname"] = employer.FirstName ?? "",
+                    ["$chefNachname"] = employer.LastName ?? "",
+                    ["$chefStrasse"] = employer.Street ?? "",
+                    ["$chefPostleitzahl"] = employer.Postcode ?? "",
+                    ["$chefStadt"] = employer.City ?? "",
+                    ["$chefEmail"] = employer.Email ?? "",
+                    ["$chefTelefonnummer"] = employer.Phone ?? "",
+                    ["$chefMobilnummer"] = employer.MobilePhone ?? "",
+                    ["$meinGeschlecht"] = userValues.Gender ?? "",
+                    ["$meinTitel"] = userValues.FirstName ?? "",
+                    ["$meinVorname"] = userValues.FirstName ?? "",
+                    ["$meinNachname"] = userValues.LastName ?? "",
+                    ["$meineStrasse"] = userValues.Street ?? "",
+                    ["$meinPostleitzahl"] = userValues.Postcode ?? "",
+                    ["$meineStadt"] = userValues.City ?? "",
+                    ["$meineEmail"] = userValues.FirstName ?? "",
+                    ["$meineTelefonnummer"] = userValues.Phone ?? "",
+                    ["$meineMobilnummer"] = userValues.MobilePhone ?? "",
+                    ["$beruf"] = jobName ?? "",
+                    ["$emailBetreff"] = documentEmail.Subject ?? "",
+                    ["$emailText"] = documentEmail.Body ?? "",
+                    ["$emailAnhang"] = documentEmail.AttachmentName ?? "",
                     ["$tagHeute"] = DateTime.Today.Day.ToString("00"),
                     ["$monatHeute"] = DateTime.Today.Month.ToString("00"),
                     ["$jahrHeute"] = DateTime.Today.Year.ToString("0000"),
@@ -291,7 +311,7 @@ namespace JobApplicationSpam.Controllers
                     return Json(new { state = 1, message = "Sorry, only pdf, odt, doc and docx files can be upload." });
                 }
                 var userPath = new UserPath(appUser.Id);
-                var savePath = Path.Combine(userPath.UserDirectory, file.FileName);
+                var savePath = Path.Combine(new TmpPath().Path, file.FileName);
 
                 using (var originalFileStream = file.OpenReadStream())
                 {
@@ -314,11 +334,11 @@ namespace JobApplicationSpam.Controllers
                 {
                     dbContext.Add(
                         new DocumentFile
-                        { Document = document,
-                            Index = -1,
+                        {
+                            Document = document,
                             Name = uploadedFileData.DisplayedFileName,
                             Path = uploadedFileData.SavedFileName,
-                            SizeInBytes = -1 }
+                        }
                     );
                     dbContext.SaveChanges();
                     return Json(new { state = 0, message = uploadedFileData.DisplayedFileName });

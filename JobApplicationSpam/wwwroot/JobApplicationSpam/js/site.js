@@ -7,61 +7,102 @@
     $(this).addClass('active1')
 })
 
-var timeUntillSave = 2000
+var timeUntillSave = 5000
 var saveTimer = null
-var saveData = new FormData()
-var fileActions = new FormData()
-var fileActionsLength = 0
 
-function save(saveData) {
+var saveRequests = []
+var fileRequests = []
+
+function save() {
+    var index = saveRequests.findIndex(function (x) { return x.wasSent === false })
+    if (index === -1) {
+        return
+    }
+    saveRequests[index].wasSent = true
     $.ajax({
         method: 'post',
         contentType: false,
         processData: false,
         cache: false,
         url: '/Home/Save',
-        data: saveData
+        data: saveRequests[index].formData
     }).done(function () {
-        saveData = new FormData()
-        var str = ""
-        for (var pair of fileActions.entries()) {
-            str += "\n" + pair[0] + ": " + pair[1]
-        }
-        if (fileActionsLength > 0) {
-            $.ajax({
-                method: 'post',
-                contentType: false,
-                processData: false,
-                cache: false,
-                url: '/Home/PerformFileActions',
-                data: fileActions
-            }).done(function () {
-                fileActions = new FormData()
-            })
-        }
+        saveRequests.shift()
     })
-
 }
 
-$(document).on('input', '.field', function (ev) {
-    saveData.set($(this).attr('name'), $(this).val())
-    setSaveTimer()
+
+function performFileRequest() {
+    var index = fileRequests.findIndex(function (x) { return x.wasSent === false })
+    if (index === -1) {
+        return
+    }
+    fileRequests[index].wasSent = true
+    $.ajax({
+        method: 'post',
+        contentType: false,
+        processData: false,
+        cache: false,
+        url: '/Home/Save',
+        data: fileRequests[index].formData
+    }).done(function () {
+        fileRequests.shift()
+    })
+
+    $.ajax({
+        method: 'post',
+        contentType: false,
+        processData: false,
+        cache: false,
+        url: '/Home/PerformFileActions',
+        data: fileRequests[index].formData
+    }).done(function () {
+        fileRequests.shift()
+    })
+}
+
+function setSaveData(key, value) {
+    clearTimeout(saveTimer)
+    if (saveRequests.length === 0) {
+        var formData = new FormData()
+        formData.append(key, value)
+        saveRequests.push(
+            {
+                formData: formData,
+                wasSent: false
+            }
+        )
+    }
+    else {
+        var index = saveRequests.findIndex(function (x) { return x.wasSent === false })
+        if (index >= 0) {
+            saveRequests[index].formData.set(key, value)
+        }
+        else {
+            var formData = new FormData()
+            formData.append(key, value)
+            saveRequests.push(
+                {
+                    formData: formData,
+                    wasSent: false
+                }
+            )
+        }
+    }
+    saveTimer = setTimeout(function () {save()}, timeUntillSave)
+}
+
+$(document).on('input', '.inputField', function (ev) {
+    setSaveData($(this).attr('name'), $(this).val())
 })
 
-$(document).on('change', '.field', function (ev) {
-    saveData.set($(this).attr('name'), $(this).val())
-    setSaveTimer()
+$(document).on('paste', '.inputField', function (ev) {
+    setSaveData($(this).attr('name'), $(this).val())
 })
 
 $(document).on('click', '.field', function (ev) {
-    saveData.set($(this).attr('name'), $(this).val())
-    setSaveTimer()
+    setSaveData($(this).attr('name'), $(this).val())
 })
-
-function setSaveTimer() {
-    clearTimeout(saveTimer)
-    saveTimer = setTimeout(function () {save(saveData)}, timeUntillSave)
-}
 
 $(document).on('click', '.applyNow', function () {
     applyNow()
@@ -82,12 +123,22 @@ function applyNow() {
         processData: false,
         cache: false,
         url: '/Home/ApplyNow',
-        data: new FormData()
-    }).done(function (data) {
-        var j = JSON.parse(data)
-        $("[id^='Employer_']").val("")
-        $("[id^='Employer_Gender']").prop("checked", false)
-
+        data: new FormData(),
+        success:
+            function (data) {
+                if (data.status === 0) {
+                    $("[id^='Employer_']").val("")
+                    $("[id^='Employer_Gender']").prop("checked", false)
+                    alert("Your application has been sent.")
+                }
+                else {
+                    alert("Sorry, your application could not be sent.")
+                }
+            },
+        error:
+            function () {
+                alert("Sorry, an error occurred. Your application has not been sent.")
+            }
     })
 }
 
@@ -98,7 +149,7 @@ function addVariable() {
     var el = $(' \
         <div class="form-group"> \
         <label for="' + elId + '"><b></b></label> \
-        <textarea id="' + elId + '" name="' + elId + '" class="form-control field" style="min-height: 150px; overflow: auto"></textarea>')
+        <textarea id="' + elId + '" name="' + elId + '" maxlength="500" class="form-control field" style="min-height: 150px; overflow: auto"></textarea>')
     el.insertBefore(parent.children().last())
 }
 
@@ -164,32 +215,48 @@ function uploadFile(fileUpload) {
 function removeRow(el) {
     var jEl = $(el)
     jEl.parents("tr:first").remove()
-
 }
+
+var fileRequestTimer = setInterval(function () { performFileRequest() }, 5000)
 
 $(document).on('click', '.documentFile_MoveUp', function (ev) {
     var el = $(this).parent()
-    fileActions.append('MoveUp_' + fileActionsLength, el.index())
-    ++fileActionsLength
+    var formData = new FormData()
+    formData.append('MoveUp', el.index())
+    fileRequests.push(
+        {
+            formData: formData,
+            wasSent: false
+        }
+    )
     var prevEl = el.prev()
     prevEl.insertAfter(el)
-    setSaveTimer()
 })
 
 $(document).on('click', '.documentFile_MoveDown', function (ev) {
     var el = $(this).parent()
-    fileActions.append('MoveDown_' + fileActionsLength, el.index())
-    ++fileActionsLength
+    var formData = new FormData()
+    formData.append('MoveDown', el.index())
+    fileRequests.push(
+        {
+            formData: formData,
+            wasSent: false
+        }
+    )
     var nextEl = el.next()
     nextEl.insertBefore(el)
-    setSaveTimer()
 })
 
 $(document).on('click', '.documentFile_Delete', function (ev) {
     var el = $(this).parent()
-    fileActions.append('Delete_' + fileActionsLength, el.index())
-    ++fileActionsLength
-    setSaveTimer()
+    var formData = new FormData()
+    formData.append('Delete', el.index())
+    fileRequests.push(
+        {
+            formData: formData,
+            wasSent: false
+        }
+    )
     el.remove()
 })
 

@@ -1,7 +1,8 @@
 ﻿@model JobApplicationSpam.Models.RadioField
 
 <div>
-    <label class="d-block"><b>@Model.LabelText</b></label>
+    <label><b>@Model.LabelText</b></label>
+    <div class="float-right d-inline">@(string.IsNullOrEmpty(Model.VariableName) ? "" : Model.VariableName)</div>
     @foreach (var radioItem in Model.Items)
     {
         <div class="form-group p-0 m-0">

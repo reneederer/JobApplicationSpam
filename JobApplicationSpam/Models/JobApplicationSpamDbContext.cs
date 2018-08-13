@@ -32,10 +32,10 @@ namespace JobApplicationSpam.Models
                 {
                     Document = document,
                     UserValues = (UserValues)GetDbObject("UserValues", appUser, document),
-                    Employer = (Employer)GetDbObject("Employer", appUser, document),
                     DocumentEmail = (DocumentEmail)GetDbObject("DocumentEmail", appUser, document),
                     CustomVariables = (IEnumerable<CustomVariable>)GetDbObject("CustomVariables", appUser, document),
                     DocumentFiles = (IEnumerable<DocumentFile>)GetDbObject("DocumentFiles", appUser, document),
+                    SentApplications = (IEnumerable<SentApplication>)GetDbObject("SentApplications", appUser, document),
                     User = appUser
                 };
         }
@@ -44,11 +44,15 @@ namespace JobApplicationSpam.Models
         {
             var document =
                 Documents
-                    .Where(x => x.AppUser.Id == appUser.Id)
-                    .OrderByDescending(x => x.Id).FirstOrDefault();
+                    .Where(x => x.AppUser == appUser)
+                    .Include(x => x.Employer)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefault();
             if (document == null)
             {
-                document = new Document { AppUser = appUser };
+                var employer = new Employer();
+                Add(employer);
+                document = new Document { AppUser = appUser, Employer = employer };
                 Add(document);
                 var customVariables =
                     new List<CustomVariable>()
@@ -115,18 +119,7 @@ namespace JobApplicationSpam.Models
                     }
                 case "Employer":
                     {
-                        var employer =
-                            Employers
-                                .Where(x => x.AppUser.Id == appUser.Id)
-                                .OrderByDescending(x => x.Id)
-                                .FirstOrDefault();
-                        if(employer == null)
-                        {
-                            employer = new Employer { AppUser = appUser };
-                            Add(employer);
-                            SaveChanges();
-                        }
-                        return employer;
+                        return document.Employer;
                     }
                 case "CustomVariables":
                     {
@@ -177,16 +170,27 @@ namespace JobApplicationSpam.Models
                         }
                         else
                         {
-                            var documentFiles =
+                            return
                                 DocumentFiles
                                     .Where(x => x.Document.Id == document.Id)
-                                    .OrderBy(x => x.Id);
-                            return documentFiles.AsEnumerable<DocumentFile>();
+                                    .OrderBy(x => x.Id)
+                                    .AsEnumerable<DocumentFile>();
                         }
                     }
                 case "Document":
                     return document;
-
+                case "SentApplications":
+                    {
+                        var sentApplications =
+                            SentApplications
+                                .Where(x => x.Document.AppUser.Id == appUser.Id)
+                                .Include(x => x.Document)
+                                .Include(x => x.Document.Employer)
+                                .Include(x => x.UserValues)
+                                .OrderByDescending(x => x.SentDate)
+                                .AsEnumerable<SentApplication>();
+                        return sentApplications;
+                    }
                 default:
                     throw new Exception($"Table not found: {table}");
             }

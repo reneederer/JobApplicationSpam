@@ -1,6 +1,7 @@
 ﻿@model JobApplicationSpam.Models.InputField
 
 <div class="form-group">
-    <label class="" for="@Model.Id"><b>@Model.LabelText</b></label>
-    <input id="@Model.Id" name="@Model.Id" class="form-control field" type="text" value="@Model.Value" />
+    <label for="@Model.Id"><b>@Model.LabelText</b></label>
+    <div class="float-right d-inline">@(string.IsNullOrEmpty(Model.VariableName) ? "" : Model.VariableName)</div>
+    <input id="@Model.Id" name="@Model.Id" maxlength="@Model.MaxLength" class="form-control inputField" type="text" value="@Model.Value" />
 </div>
