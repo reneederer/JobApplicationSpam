@@ -54,7 +54,7 @@ namespace JobApplicationSpam.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Register(string returnUrl)
+        public IActionResult Register()
         {
             return View();
         }
@@ -62,7 +62,7 @@ namespace JobApplicationSpam.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(AccountModel details, string returnUrl)
+        public async Task<IActionResult> Register(AccountModel details)
         {
             if (ModelState.IsValid)
             {
@@ -78,7 +78,7 @@ namespace JobApplicationSpam.Controllers
                             await signInManager.PasswordSignInAsync(appUser, details.Password, false, false);
                         if (signInResult.Succeeded)
                         {
-                            return Redirect(returnUrl ?? "/");
+                            return Redirect("/");
                         }
                         else
                         {

@@ -220,11 +220,15 @@ namespace JobApplicationSpam.Models
         {
             foreach(var kv in dict)
             {
-                if(kv.Value == "")
+                if(s.Contains(kv.Key))
                 {
-                    s.Replace(kv.Key + " ", "");
+                    var value = ReplaceInString(kv.Value, dict);
+                    if(value == "")
+                    {
+                        s = s.Replace(kv.Key + " ", "");
+                    }
+                    s = s.Replace(kv.Key, value);
                 }
-                s = s.Replace(kv.Key, kv.Value);
             }
             return s;
         }

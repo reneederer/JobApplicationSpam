@@ -188,21 +188,22 @@ namespace JobApplicationSpam.Controllers
                 if (pdfFilePaths.Count >= 1)
                 {
                     var attachmentName = FileConverter.ReplaceInString(documentEmail.AttachmentName, dict);
-                    attachmentName =
-                        ((attachmentName.Length >= 4 &&
-                            attachmentName.EndsWith(".pdf", StringComparison.CurrentCultureIgnoreCase)
-                        || attachmentName.Length >= 1 && !attachmentName.EndsWith(".pdf", StringComparison.CurrentCultureIgnoreCase))
-                        )
-                        ? attachmentName
-                        : "Bewerbung.pdf";
+                    if(attachmentName.Length >= 1 && !attachmentName.EndsWith(".pdf", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        attachmentName = attachmentName + ".pdf";
+                    }
+                    else if (!(attachmentName.Length >= 4 && attachmentName.EndsWith(".pdf", StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        attachmentName = "Bewerbung.pdf";
+                    }
                     attachments.Add(new EmailAttachment { Path = mergedPath, Name = attachmentName });
                 }
                 HelperFunctions.SendEmail(
                     new EmailData
                     {
                         Attachments = attachments,
-                        Body = ReplaceInString(documentEmail.Body, dict),
-                        Subject = ReplaceInString(documentEmail.Subject, dict),
+                        Body = FileConverter.ReplaceInString(documentEmail.Body, dict),
+                        Subject = FileConverter.ReplaceInString(documentEmail.Subject, dict),
                         ToEmail = document.Employer.Email,
                         FromEmail = userValues.Email,
                         FromName =
@@ -265,7 +266,7 @@ namespace JobApplicationSpam.Controllers
                 {
                     ["$chefFirma"] = employer.Company ?? "",
                     ["$chefGeschlecht"] = employer.Gender ?? "",
-                    ["$chefTitel"] = employer.FirstName ?? "",
+                    ["$chefTitel"] = employer.Degree ?? "",
                     ["$chefVorname"] = employer.FirstName ?? "",
                     ["$chefNachname"] = employer.LastName ?? "",
                     ["$chefStrasse"] = employer.Street ?? "",
@@ -275,13 +276,13 @@ namespace JobApplicationSpam.Controllers
                     ["$chefTelefonnummer"] = employer.Phone ?? "",
                     ["$chefMobilnummer"] = employer.MobilePhone ?? "",
                     ["$meinGeschlecht"] = userValues.Gender ?? "",
-                    ["$meinTitel"] = userValues.FirstName ?? "",
+                    ["$meinTitel"] = userValues.Degree ?? "",
                     ["$meinVorname"] = userValues.FirstName ?? "",
                     ["$meinNachname"] = userValues.LastName ?? "",
                     ["$meineStrasse"] = userValues.Street ?? "",
                     ["$meinePostleitzahl"] = userValues.Postcode ?? "",
                     ["$meineStadt"] = userValues.City ?? "",
-                    ["$meineEmail"] = userValues.FirstName ?? "",
+                    ["$meineEmail"] = userValues.Email ?? "",
                     ["$meineTelefonnummer"] = userValues.Phone ?? "",
                     ["$meineMobilnummer"] = userValues.MobilePhone ?? "",
                     ["$beruf"] = jobName ?? "",
@@ -294,19 +295,6 @@ namespace JobApplicationSpam.Controllers
                 };
             Variables.addVariablesToDict(customVariables.Select(x => x.Text), dict);
             return dict;
-        }
-
-        private string ReplaceInString(string s, IDictionary<string, string> dict)
-        {
-            foreach(var kv in dict)
-            {
-                if(kv.Value == "")
-                {
-                    s.Replace(kv.Key + " ", "");
-                }
-                s = s.Replace(kv.Key, kv.Value);
-            }
-            return s;
         }
 
         [HttpPost]

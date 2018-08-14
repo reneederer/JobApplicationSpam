@@ -82,7 +82,7 @@ module Translations =
                 | Gender -> "Gender"
                 | Male -> "male"
                 | Female -> "female"
-                | Unknown -> "Unknown"
+                | Unknown -> "unknown"
                 | WontTell -> "won't tell"
                 | Degree -> "Degree"
                 | FirstName -> "First name"

@@ -1,18 +1,18 @@
 ﻿@model JobApplicationSpamState
 @{
     Layout = "_Layout";
-    var t = Translations.getTranslationsDict("de");
+    var t = Translations.getTranslationsDict("en");
 }
 
 <div class="page" id="SentApplications">
     <h1>Sent Applications</h1>
     <table class="table table-striped table-bordered" style="overflow: auto">
         <tr>
-            <th>Firma</th>
-            <th>Ansprechpartner</th>
-            <th>Telefonnummer</th>
+            <th>Company</th>
+            <th>Boss</th>
+            <th>Phone</th>
             <th>Email</th>
-            <th>Beworben am</th>
+            <th>Applied on</th>
         </tr>
     @foreach (var sentApplication in Model.SentApplications)
     {
@@ -98,7 +98,7 @@
                 {
                     LabelText = t["Postcode"],
                     Id = "UserValues_Postcode",
-                    VariableName = "$meinePlz",
+                    VariableName = "$meinePostleitzahl",
                     Value = Model.UserValues.Postcode
                 },
                 new InputField
@@ -112,14 +112,14 @@
                 {
                     LabelText = t["Phone"],
                     Id = "UserValues_Phone",
-                    VariableName = "$meineTelefonnr",
+                    VariableName = "$meineTelefonnummer",
                     Value = Model.UserValues.Phone
                 },
                 new InputField
                 {
                     LabelText = t["MobilePhone"],
                     Id = "UserValues_MobilePhone",
-                    VariableName = "$meineMobilnr",
+                    VariableName = "$meineMobilnummer",
                     Value = Model.UserValues.MobilePhone
                 }
             }
@@ -256,7 +256,7 @@
                 {
                     LabelText = t["Postcode"],
                     Id = "Employer_Postcode",
-                    VariableName = "$chefPlz",
+                    VariableName = "$chefPostleitzahl",
                     Value = Model.Document.Employer.Postcode
                 },
                 new InputField
@@ -277,14 +277,14 @@
                 {
                     LabelText = t["Phone"],
                     Id = "Employer_Phone",
-                    VariableName = "$chefTelefonnr",
+                    VariableName = "$chefTelefonnummer",
                     Value = Model.Document.Employer.Phone
                 },
                 new InputField
                 {
                     LabelText = t["MobilePhone"],
                     Id = "Employer_MobilePhone",
-                    VariableName = "$chefMobilnr",
+                    VariableName = "$chefMobilnummer",
                     Value = Model.Document.Employer.MobilePhone
                 },
                 new ButtonField
