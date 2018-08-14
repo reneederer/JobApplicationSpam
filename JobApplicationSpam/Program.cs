@@ -17,7 +17,18 @@ namespace JobApplicationSpam
     {
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
+            CreateWebHostBuilder(args)
+                /*.ConfigureAppConfiguration(
+                    (ctx, config) =>
+                    {
+                        config
+                            .SetBasePath(Directory.GetCurrentDirectory())
+                            .AddJsonFile($"appsettings.json", optional: false, reloadOnChange: true);
+                    }
+                )
+                */
+                .Build()
+                .Run();
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)

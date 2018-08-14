@@ -237,10 +237,31 @@ namespace JobApplicationSpam.Controllers
             return appUser;
         }
 
-        private IDictionary<string, string> getVariableDict(Employer employer, UserValues userValues, DocumentEmail documentEmail, IEnumerable<CustomVariable> customVariables, string jobName)
+        public class VariableComparer : IComparer<string>
+        {
+            public int Compare(string x, string y)
+            {
+                int lengthCompareResult = -1 * x.Length.CompareTo(y.Length);
+                if(lengthCompareResult == 0)
+                {
+                    return x.CompareTo(y);
+                }
+                else
+                {
+                    return lengthCompareResult;
+                }
+            }
+        }
+
+        private SortedDictionary<string, string> getVariableDict(
+            Employer employer,
+            UserValues userValues,
+            DocumentEmail documentEmail,
+            IEnumerable<CustomVariable> customVariables,
+            string jobName)
         {
             var dict =
-                new Dictionary<string, string>
+                new SortedDictionary<string, string>(new VariableComparer())
                 {
                     ["$chefFirma"] = employer.Company ?? "",
                     ["$chefGeschlecht"] = employer.Gender ?? "",
@@ -258,7 +279,7 @@ namespace JobApplicationSpam.Controllers
                     ["$meinVorname"] = userValues.FirstName ?? "",
                     ["$meinNachname"] = userValues.LastName ?? "",
                     ["$meineStrasse"] = userValues.Street ?? "",
-                    ["$meinPostleitzahl"] = userValues.Postcode ?? "",
+                    ["$meinePostleitzahl"] = userValues.Postcode ?? "",
                     ["$meineStadt"] = userValues.City ?? "",
                     ["$meineEmail"] = userValues.FirstName ?? "",
                     ["$meineTelefonnummer"] = userValues.Phone ?? "",

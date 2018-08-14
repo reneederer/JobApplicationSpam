@@ -14,6 +14,7 @@ JobApplicationSpam/Migrations/
 JobApplicationSpam/wwwroot/*
 !/JobApplicationSpam/wwwroot/JobApplicationSpam/
 JobApplicationSpam/appsettings.json
+JobApplicationSpam/appsettings.Development.json
 
 
 # Build results
